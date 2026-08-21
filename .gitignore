@@ -1,5 +1,4 @@
 picarro_raw_data/
-output/
 *.xlsx
 ~$*.xlsx
 *.pdf

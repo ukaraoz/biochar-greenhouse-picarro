@@ -4,7 +4,7 @@ library(dplyr)
 googlesheets4::gs4_auth()
 
 # `base` is set in run_all.R; scripts expect it to exist in the environment
-data_dir = file.path(base, "Piccaro_Raw_data")
+data_dir = file.path(base, "picarro_raw_data")
 # discover all .dat files recursively so new subdirectory drops are picked up automatically
 files = list.files(path = data_dir, full.names = TRUE, recursive = TRUE, pattern = "\\.dat")
 
