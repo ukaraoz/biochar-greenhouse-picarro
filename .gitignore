@@ -1,7 +1,9 @@
 picarro_raw_data/
 *.xlsx
+!output/**/*.xlsx
 ~$*.xlsx
 *.pdf
+!output/**/*.pdf
 .Rhistory
 .RData
 .Rproj.user/
