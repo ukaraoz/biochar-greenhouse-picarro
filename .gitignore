@@ -1,0 +1,8 @@
+picarro_raw_data/
+output/
+*.xlsx
+~$*.xlsx
+*.pdf
+.Rhistory
+.RData
+.Rproj.user/
