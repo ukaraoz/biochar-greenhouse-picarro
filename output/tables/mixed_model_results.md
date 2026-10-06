@@ -1,0 +1,137 @@
+# Pairwise mixed-model results
+
+Pairwise repeated-measures linear mixed models, fitted separately for each measurement type × gas × treatment comparison (75 models). Each model uses only the 8 pots (2 treatments × 4 replicates) of its comparison.
+
+```
+gas ~ Treatment * Occasion,  random = ~ 1 | Replicate/PotID,  corCAR1(form = ~ timestamp | Replicate/PotID)
+```
+
+- **Response:** mean concentration per chamber window (`picarro_data_averaged`).
+- **Difference** = test − reference, averaged over the 15 measurement occasions. **% change** is relative to the reference mean.
+- **p** = Type III F-test for Treatment (3 denominator df in every model). \* = p < 0.05. No correction for multiple testing across the 75 models.
+- **Interaction p** = Treatment × Occasion: whether the treatment difference changes over time.
+
+Generated from `output/tables/mixed_model_results.xlsx` (`scripts/05_mixed_models.R`).
+
+## Overview: direction, % change (p)
+
+| Gas | Comparison | Light | CO2_Fixation | After_Watering |
+|---|---|---|---|---|
+| CO₂ | Org_Ctrl vs Conv_Ctrl | ↓ -4.0% (0.073) | ↓ -2.4% (0.334) | ↑ +1.5% (0.553) |
+| CO₂ | Conv_BC vs Conv_Ctrl | ↓ -2.3% (0.364) | ↓ -4.4% (0.202) | **↓ -4.8% (0.011)** \* |
+| CO₂ | Conv_BC-SMT vs Conv_BC | ↓ -1.5% (0.203) | ↓ -1.3% (0.284) | ↓ -2.2% (0.139) |
+| CO₂ | Conv_BC-MPSS vs Conv_BC | ↓ -2.8% (0.100) | ↓ -1.9% (0.142) | ↓ -3.0% (0.064) |
+| CO₂ | Conv_BC-MPSS-SMT vs Conv_BC | ↓ -3.4% (0.078) | ↓ -2.6% (0.077) | **↓ -4.6% (0.019)** \* |
+| CH₄ | Org_Ctrl vs Conv_Ctrl | ↓ -0.9% (0.174) | ↓ -0.6% (0.320) | ↑ +0.2% (0.284) |
+| CH₄ | Conv_BC vs Conv_Ctrl | ↓ -0.8% (0.234) | ↓ -0.9% (0.194) | ↓ -0.3% (0.277) |
+| CH₄ | Conv_BC-SMT vs Conv_BC | ↓ -0.2% (0.514) | ↓ -0.3% (0.421) | ↓ -0.1% (0.710) |
+| CH₄ | Conv_BC-MPSS vs Conv_BC | ↓ -0.5% (0.163) | ↓ -0.5% (0.186) | ↓ -0.2% (0.400) |
+| CH₄ | Conv_BC-MPSS-SMT vs Conv_BC | ↓ -0.7% (0.093) | ↓ -0.6% (0.095) | ↓ -0.3% (0.207) |
+| H₂O | Org_Ctrl vs Conv_Ctrl | ↑ +9.7% (0.054) | ↑ +2.0% (0.488) | **↓ -5.1% (0.038)** \* |
+| H₂O | Conv_BC vs Conv_Ctrl | ↑ +7.2% (0.052) | **↑ +9.0% (0.019)** \* | ↑ +2.5% (0.196) |
+| H₂O | Conv_BC-SMT vs Conv_BC | ↑ +1.1% (0.657) | ↑ +1.9% (0.347) | ↑ +1.0% (0.636) |
+| H₂O | Conv_BC-MPSS vs Conv_BC | ↑ +5.1% (0.092) | ↑ +4.0% (0.098) | ↑ +0.1% (0.961) |
+| H₂O | Conv_BC-MPSS-SMT vs Conv_BC | ↑ +6.5% (0.056) | **↑ +6.3% (0.038)** \* | ↑ +3.0% (0.174) |
+| N₂O | Org_Ctrl vs Conv_Ctrl | ↑ +0.5% (0.279) | ↑ +0.1% (0.798) | ↑ +0.2% (0.548) |
+| N₂O | Conv_BC vs Conv_Ctrl | ↓ -0.5% (0.189) | ↓ -0.3% (0.354) | ↑ +0.1% (0.709) |
+| N₂O | Conv_BC-SMT vs Conv_BC | ↑ +0.1% (0.840) | ↑ +0.1% (0.709) | ↓ -0.1% (0.812) |
+| N₂O | Conv_BC-MPSS vs Conv_BC | ↑ +0.3% (0.468) | ↑ +0.2% (0.439) | ↑ +0.2% (0.510) |
+| N₂O | Conv_BC-MPSS-SMT vs Conv_BC | ↑ +0.1% (0.695) | ↓ -0.1% (0.733) | ↓ -0.2% (0.650) |
+| NH₃ | Org_Ctrl vs Conv_Ctrl | ↓ -21.7% (0.060) | ↓ -20.5% (0.231) | ↑ +2.0% (0.769) |
+| NH₃ | Conv_BC vs Conv_Ctrl | ↑ +9.9% (0.486) | ↓ -3.8% (0.789) | ↓ -1.0% (0.866) |
+| NH₃ | Conv_BC-SMT vs Conv_BC | ↓ -1.6% (0.904) | ↓ -8.2% (0.439) | ↑ +3.5% (0.705) |
+| NH₃ | Conv_BC-MPSS vs Conv_BC | ↑ +10.2% (0.588) | ↓ -2.3% (0.828) | ↑ +5.7% (0.478) |
+| NH₃ | Conv_BC-MPSS-SMT vs Conv_BC | ↑ +1.6% (0.901) | ↓ -5.3% (0.610) | ↑ +2.2% (0.785) |
+
+## Full results
+
+### Light
+
+| Gas | Comparison | Reference mean | Test mean | Difference [95% CI] | % change | Direction | p | Interaction p |
+|---|---|---|---|---|---|---|---|---|
+| CO₂ | Org_Ctrl vs Conv_Ctrl | 439.9 | 422.2 | -17.67 [-38.36, 3.015] | -4.0% | lower | 0.073 | 0.989 |
+| CO₂ | Conv_BC vs Conv_Ctrl | 439.9 | 429.8 | -10.07 [-40.12, 19.98] | -2.3% | lower | 0.364 | 0.871 |
+| CO₂ | Conv_BC-SMT vs Conv_BC | 429.8 | 423.5 | -6.29 [-18.63, 6.05] | -1.5% | lower | 0.203 | 1.000 |
+| CO₂ | Conv_BC-MPSS vs Conv_BC | 429.8 | 417.9 | -11.91 [-28.01, 4.182] | -2.8% | lower | 0.100 | 0.995 |
+| CO₂ | Conv_BC-MPSS-SMT vs Conv_BC | 429.8 | 415.1 | -14.78 [-32.61, 3.055] | -3.4% | lower | 0.078 | 0.995 |
+| CH₄ | Org_Ctrl vs Conv_Ctrl | 1.982 | 1.963 | -0.01849 [-0.05165, 0.01467] | -0.9% | lower | 0.174 | 0.461 |
+| CH₄ | Conv_BC vs Conv_Ctrl | 1.982 | 1.966 | -0.01603 [-0.05039, 0.01832] | -0.8% | lower | 0.234 | 0.998 |
+| CH₄ | Conv_BC-SMT vs Conv_BC | 1.966 | 1.962 | -0.004118 [-0.02189, 0.01365] | -0.2% | lower | 0.514 | 0.999 |
+| CH₄ | Conv_BC-MPSS vs Conv_BC | 1.966 | 1.956 | -0.009963 [-0.02722, 0.007294] | -0.5% | lower | 0.163 | 0.948 |
+| CH₄ | Conv_BC-MPSS-SMT vs Conv_BC | 1.966 | 1.953 | -0.01295 [-0.02987, 0.003967] | -0.7% | lower | 0.093 | 0.912 |
+| H₂O | Org_Ctrl vs Conv_Ctrl | 2.167 | 2.378 | 0.2109 [-0.006023, 0.4277] | +9.7% | higher | 0.054 | 0.193 |
+| H₂O | Conv_BC vs Conv_Ctrl | 2.167 | 2.324 | 0.1566 [-0.002522, 0.3157] | +7.2% | higher | 0.052 | 0.448 |
+| H₂O | Conv_BC-SMT vs Conv_BC | 2.324 | 2.348 | 0.02473 [-0.1357, 0.1851] | +1.1% | higher | 0.657 | 0.830 |
+| H₂O | Conv_BC-MPSS vs Conv_BC | 2.324 | 2.442 | 0.1187 [-0.03576, 0.2732] | +5.1% | higher | 0.092 | 0.265 |
+| H₂O | Conv_BC-MPSS-SMT vs Conv_BC | 2.324 | 2.475 | 0.1509 [-0.006672, 0.3085] | +6.5% | higher | 0.056 | 0.254 |
+| N₂O | Org_Ctrl vs Conv_Ctrl | 0.3191 | 0.3207 | 0.001628 [-0.002299, 0.005556] | +0.5% | higher | 0.279 | 0.483 |
+| N₂O | Conv_BC vs Conv_Ctrl | 0.3191 | 0.3176 | -0.001453 [-0.004186, 0.001279] | -0.5% | lower | 0.189 | 0.491 |
+| N₂O | Conv_BC-SMT vs Conv_BC | 0.3176 | 0.3178 | 0.0002251 [-0.003031, 0.003481] | +0.1% | higher | 0.840 | 0.825 |
+| N₂O | Conv_BC-MPSS vs Conv_BC | 0.3176 | 0.3186 | 0.0009553 [-0.002709, 0.00462] | +0.3% | higher | 0.468 | 0.473 |
+| N₂O | Conv_BC-MPSS-SMT vs Conv_BC | 0.3176 | 0.318 | 0.0004201 [-0.002675, 0.003516] | +0.1% | higher | 0.695 | 0.436 |
+| NH₃ | Org_Ctrl vs Conv_Ctrl | 5.716 | 4.475 | -1.241 [-2.574, 0.09306] | -21.7% | lower | 0.060 | 0.569 |
+| NH₃ | Conv_BC vs Conv_Ctrl | 5.716 | 6.281 | 0.565 [-1.706, 2.836] | +9.9% | higher | 0.486 | 0.946 |
+| NH₃ | Conv_BC-SMT vs Conv_BC | 6.281 | 6.182 | -0.09888 [-2.509, 2.311] | -1.6% | lower | 0.904 | 0.831 |
+| NH₃ | Conv_BC-MPSS vs Conv_BC | 6.281 | 6.919 | 0.6376 [-2.719, 3.994] | +10.2% | higher | 0.588 | 0.512 |
+| NH₃ | Conv_BC-MPSS-SMT vs Conv_BC | 6.281 | 6.385 | 0.1033 [-2.331, 2.538] | +1.6% | higher | 0.901 | 0.397 |
+
+### CO2_Fixation
+
+| Gas | Comparison | Reference mean | Test mean | Difference [95% CI] | % change | Direction | p | Interaction p |
+|---|---|---|---|---|---|---|---|---|
+| CO₂ | Org_Ctrl vs Conv_Ctrl | 439 | 428.6 | -10.48 [-39.51, 18.56] | -2.4% | lower | 0.334 | 0.997 |
+| CO₂ | Conv_BC vs Conv_Ctrl | 439.1 | 419.9 | -19.17 [-56.6, 18.25] | -4.4% | lower | 0.202 | 0.479 |
+| CO₂ | Conv_BC-SMT vs Conv_BC | 419.9 | 414.6 | -5.353 [-18.44, 7.737] | -1.3% | lower | 0.284 | 0.997 |
+| CO₂ | Conv_BC-MPSS vs Conv_BC | 419.9 | 411.8 | -8.172 [-21.32, 4.977] | -1.9% | lower | 0.142 | 0.990 |
+| CO₂ | Conv_BC-MPSS-SMT vs Conv_BC | 419.9 | 409 | -10.92 [-24.02, 2.181] | -2.6% | lower | 0.077 | 0.787 |
+| CH₄ | Org_Ctrl vs Conv_Ctrl | 1.977 | 1.965 | -0.01182 [-0.04346, 0.01982] | -0.6% | lower | 0.320 | 0.578 |
+| CH₄ | Conv_BC vs Conv_Ctrl | 1.977 | 1.96 | -0.01704 [-0.04958, 0.01551] | -0.9% | lower | 0.194 | 0.996 |
+| CH₄ | Conv_BC-SMT vs Conv_BC | 1.96 | 1.955 | -0.004933 [-0.0218, 0.01194] | -0.3% | lower | 0.421 | 0.999 |
+| CH₄ | Conv_BC-MPSS vs Conv_BC | 1.96 | 1.951 | -0.008934 [-0.02559, 0.007724] | -0.5% | lower | 0.186 | 0.938 |
+| CH₄ | Conv_BC-MPSS-SMT vs Conv_BC | 1.96 | 1.947 | -0.01261 [-0.02927, 0.004063] | -0.6% | lower | 0.095 | 0.912 |
+| H₂O | Org_Ctrl vs Conv_Ctrl | 2.329 | 2.376 | 0.04701 [-0.1429, 0.2369] | +2.0% | higher | 0.488 | 0.596 |
+| H₂O | Conv_BC vs Conv_Ctrl | 2.328 | 2.538 | 0.2105 [0.06586, 0.3551] | +9.0% | higher | **0.019** \* | 0.413 |
+| H₂O | Conv_BC-SMT vs Conv_BC | 2.538 | 2.586 | 0.04814 [-0.08955, 0.1858] | +1.9% | higher | 0.347 | 0.768 |
+| H₂O | Conv_BC-MPSS vs Conv_BC | 2.538 | 2.64 | 0.1022 [-0.03496, 0.2394] | +4.0% | higher | 0.098 | 0.529 |
+| H₂O | Conv_BC-MPSS-SMT vs Conv_BC | 2.538 | 2.698 | 0.1598 [0.01608, 0.3035] | +6.3% | higher | **0.038** \* | 0.353 |
+| N₂O | Org_Ctrl vs Conv_Ctrl | 0.3182 | 0.3184 | 0.0002578 [-0.002681, 0.003197] | +0.1% | higher | 0.798 | 0.987 |
+| N₂O | Conv_BC vs Conv_Ctrl | 0.3181 | 0.3172 | -0.0009837 [-0.003849, 0.001881] | -0.3% | lower | 0.354 | 0.111 |
+| N₂O | Conv_BC-SMT vs Conv_BC | 0.3172 | 0.3175 | 0.000372 [-0.002513, 0.003257] | +0.1% | higher | 0.709 | 0.014 |
+| N₂O | Conv_BC-MPSS vs Conv_BC | 0.3172 | 0.3179 | 0.0007843 [-0.00202, 0.003588] | +0.2% | higher | 0.439 | 0.273 |
+| N₂O | Conv_BC-MPSS-SMT vs Conv_BC | 0.3172 | 0.3168 | -0.0003417 [-0.003246, 0.002563] | -0.1% | lower | 0.733 | 0.774 |
+| NH₃ | Org_Ctrl vs Conv_Ctrl | 6.848 | 5.442 | -1.407 [-4.394, 1.581] | -20.5% | lower | 0.231 | 0.752 |
+| NH₃ | Conv_BC vs Conv_Ctrl | 6.853 | 6.591 | -0.2618 [-3.11, 2.586] | -3.8% | lower | 0.789 | 0.931 |
+| NH₃ | Conv_BC-SMT vs Conv_BC | 6.592 | 6.053 | -0.5383 [-2.462, 1.386] | -8.2% | lower | 0.439 | 1.000 |
+| NH₃ | Conv_BC-MPSS vs Conv_BC | 6.591 | 6.438 | -0.1536 [-2.215, 1.907] | -2.3% | lower | 0.828 | 0.622 |
+| NH₃ | Conv_BC-MPSS-SMT vs Conv_BC | 6.592 | 6.242 | -0.3494 [-2.308, 1.609] | -5.3% | lower | 0.610 | 0.548 |
+
+### After_Watering
+
+| Gas | Comparison | Reference mean | Test mean | Difference [95% CI] | % change | Direction | p | Interaction p |
+|---|---|---|---|---|---|---|---|---|
+| CO₂ | Org_Ctrl vs Conv_Ctrl | 430 | 436.4 | 6.386 [-24.1, 36.87] | +1.5% | higher | 0.553 | 0.972 |
+| CO₂ | Conv_BC vs Conv_Ctrl | 430.2 | 409.7 | -20.49 [-32.14, -8.845] | -4.8% | lower | **0.011** \* | 0.694 |
+| CO₂ | Conv_BC-SMT vs Conv_BC | 409.6 | 400.8 | -8.865 [-22.96, 5.232] | -2.2% | lower | 0.139 | 0.981 |
+| CO₂ | Conv_BC-MPSS vs Conv_BC | 409.6 | 397.4 | -12.22 [-25.78, 1.334] | -3.0% | lower | 0.064 | 0.892 |
+| CO₂ | Conv_BC-MPSS-SMT vs Conv_BC | 409.6 | 390.6 | -19.02 [-32.06, -5.979] | -4.6% | lower | **0.019** \* | 0.232 |
+| CH₄ | Org_Ctrl vs Conv_Ctrl | 1.948 | 1.953 | 0.004671 [-0.006759, 0.0161] | +0.2% | higher | 0.284 | 0.998 |
+| CH₄ | Conv_BC vs Conv_Ctrl | 1.948 | 1.943 | -0.005244 [-0.01783, 0.007338] | -0.3% | lower | 0.277 | 0.994 |
+| CH₄ | Conv_BC-SMT vs Conv_BC | 1.943 | 1.941 | -0.001774 [-0.01558, 0.01204] | -0.1% | lower | 0.710 | 1.000 |
+| CH₄ | Conv_BC-MPSS vs Conv_BC | 1.943 | 1.939 | -0.003799 [-0.01615, 0.008554] | -0.2% | lower | 0.400 | 0.999 |
+| CH₄ | Conv_BC-MPSS-SMT vs Conv_BC | 1.943 | 1.936 | -0.006676 [-0.01991, 0.006562] | -0.3% | lower | 0.207 | 0.986 |
+| H₂O | Org_Ctrl vs Conv_Ctrl | 2.771 | 2.63 | -0.1417 [-0.2689, -0.01452] | -5.1% | lower | **0.038** \* | 0.992 |
+| H₂O | Conv_BC vs Conv_Ctrl | 2.771 | 2.842 | 0.07038 [-0.06469, 0.2054] | +2.5% | higher | 0.196 | 0.974 |
+| H₂O | Conv_BC-SMT vs Conv_BC | 2.839 | 2.867 | 0.02771 [-0.1401, 0.1955] | +1.0% | higher | 0.636 | 0.992 |
+| H₂O | Conv_BC-MPSS vs Conv_BC | 2.841 | 2.843 | 0.002646 [-0.1542, 0.1595] | +0.1% | higher | 0.961 | 0.958 |
+| H₂O | Conv_BC-MPSS-SMT vs Conv_BC | 2.842 | 2.927 | 0.08514 [-0.06759, 0.2379] | +3.0% | higher | 0.174 | 0.795 |
+| N₂O | Org_Ctrl vs Conv_Ctrl | 0.3153 | 0.3159 | 0.0006085 [-0.00226, 0.003477] | +0.2% | higher | 0.548 | 0.552 |
+| N₂O | Conv_BC vs Conv_Ctrl | 0.3153 | 0.3157 | 0.0003875 [-0.002617, 0.003393] | +0.1% | higher | 0.709 | 0.346 |
+| N₂O | Conv_BC-SMT vs Conv_BC | 0.3157 | 0.3154 | -0.0003156 [-0.004183, 0.003552] | -0.1% | lower | 0.812 | 0.042 |
+| N₂O | Conv_BC-MPSS vs Conv_BC | 0.3157 | 0.3163 | 0.000576 [-0.001885, 0.003037] | +0.2% | higher | 0.510 | 0.917 |
+| N₂O | Conv_BC-MPSS-SMT vs Conv_BC | 0.3157 | 0.3151 | -0.0006108 [-0.004483, 0.003262] | -0.2% | lower | 0.650 | 0.537 |
+| NH₃ | Org_Ctrl vs Conv_Ctrl | 5.583 | 5.693 | 0.11 [-0.9781, 1.198] | +2.0% | higher | 0.769 | 1.000 |
+| NH₃ | Conv_BC vs Conv_Ctrl | 5.584 | 5.525 | -0.05838 [-1.072, 0.9552] | -1.0% | lower | 0.866 | 0.998 |
+| NH₃ | Conv_BC-SMT vs Conv_BC | 5.523 | 5.714 | 0.1911 [-1.27, 1.653] | +3.5% | higher | 0.705 | 0.663 |
+| NH₃ | Conv_BC-MPSS vs Conv_BC | 5.523 | 5.84 | 0.3171 [-0.9301, 1.564] | +5.7% | higher | 0.478 | 0.862 |
+| NH₃ | Conv_BC-MPSS-SMT vs Conv_BC | 5.526 | 5.645 | 0.1191 [-1.153, 1.391] | +2.2% | higher | 0.785 | 0.787 |
+
