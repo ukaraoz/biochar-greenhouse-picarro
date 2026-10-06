@@ -2,7 +2,7 @@ library(nlme)
 library(emmeans)
 
 # Pairwise repeated-measures linear mixed models: one model per
-# measurement type × gas × treatment comparison, each fitted on only the
+# measurement condition × gas × treatment comparison, each fitted on only the
 # 8 pots (2 treatments × 4 replicates) of that comparison.
 #
 # Each pot is measured on 15 occasions; observations from the same pot closer
@@ -24,7 +24,7 @@ comparisons = list(
 # seconds since epoch for corCAR1; Order_Index alone does not carry the real
 # spacing between visits
 window_times = picarro_data_joined %>%
-  group_by(PotID, Order_Index, type) %>%
+  group_by(PotID, Order_Index, Condition) %>%
   summarise(window_time = mean(timestamp), .groups = "drop") %>%
   mutate(time = as.numeric(window_time),
          Order_Index = as.character(Order_Index))
@@ -32,8 +32,8 @@ window_times = picarro_data_joined %>%
 # one row per chamber window (the per-window means from 03_average.R);
 # TreatmentCode is the PotID prefix, e.g. "Conv_BC-MPSS" from "Conv_BC-MPSS_3_C"
 model_data = picarro_data_averaged %>%
-  mutate(Order_Index = as.character(Order_Index), type = as.character(type)) %>%
-  left_join(window_times, by = c("PotID", "Order_Index", "type")) %>%
+  mutate(Order_Index = as.character(Order_Index), Condition = as.character(Condition)) %>%
+  left_join(window_times, by = c("PotID", "Order_Index", "Condition")) %>%
   mutate(
     TreatmentCode = sub("_[0-9]+_[A-D]$", "", PotID),
     Occasion      = factor(as.integer(Order_Index)),
@@ -41,7 +41,7 @@ model_data = picarro_data_averaged %>%
     PotID         = factor(PotID)
   )
 
-types = c("Light", "CO2_Fixation", "After_Watering")
+conditions = c("Light", "CO2_Fixation", "After_Watering")
 
 # Fixed:  Treatment × Occasion — occasion means absorb conditions shared by all
 #         pots on a visit; the interaction tests whether the treatment
@@ -51,9 +51,9 @@ types = c("Light", "CO2_Fixation", "After_Watering")
 #         is in seconds, so phi (correlation per second) must start near 1;
 #         nlme's default start (0.2) means no correlation across days and the
 #         optimizer never moves it. Start at a one-day correlation of 0.5.
-fit_comparison_model = function(gas, type_name, ref, test) {
+fit_comparison_model = function(gas, condition_name, ref, test) {
   d = model_data %>%
-    filter(type == type_name, TreatmentCode %in% c(ref, test)) %>%
+    filter(Condition == condition_name, TreatmentCode %in% c(ref, test)) %>%
     mutate(Treatment = factor(TreatmentCode, levels = c(ref, test)))
   lme(as.formula(paste(gas, "~ Treatment * Occasion")),
       random      = ~ 1 | Replicate/PotID,
@@ -65,17 +65,17 @@ fit_comparison_model = function(gas, type_name, ref, test) {
 }
 
 model_grid = tidyr::expand_grid(
-  type = types,
+  Condition = conditions,
   gas  = measurements,
   tibble::tibble(ref = sapply(comparisons, `[`, 1), test = sapply(comparisons, `[`, 2))
 ) %>%
   mutate(comparison = paste(test, "vs", ref),
-         model_id   = paste(type, gas, comparison, sep = " | "))
+         model_id   = paste(Condition, gas, comparison, sep = " | "))
 
 # a failed fit is recorded as NULL rather than stopping the whole run
 models = setNames(lapply(seq_len(nrow(model_grid)), function(i) {
   g = model_grid[i, ]
-  tryCatch(fit_comparison_model(g$gas, g$type, g$ref, g$test),
+  tryCatch(fit_comparison_model(g$gas, g$Condition, g$ref, g$test),
            error = function(e) {
              message("Fit failed: ", g$model_id, ": ", conditionMessage(e))
              NULL
@@ -121,9 +121,9 @@ results = bind_rows(lapply(seq_len(nrow(model_grid)), function(i) {
   )
 }))
 
-# compact view: one row per type × gas × comparison
+# compact view: one row per condition × gas × comparison
 summary_table = results %>%
-  select(type, gas, comparison, mean_ref, mean_test, difference, CI_lower, CI_upper,
+  select(Condition, gas, comparison, mean_ref, mean_test, difference, CI_lower, CI_upper,
          percent_change, p_treatment, direction, significant, p_interaction)
 
 writexl::write_xlsx(
@@ -131,14 +131,14 @@ writexl::write_xlsx(
   file.path(base, "output/tables/mixed_model_results.xlsx")
 )
 
-# residual diagnostics: one page per type × comparison, one row per gas;
+# residual diagnostics: one page per condition × comparison, one row per gas;
 # normalized residuals account for the CAR1 correlation
 pdf(file.path(base, "output/figures/mixed_model_diagnostics.pdf"), width = 10, height = 4 * length(measurements))
-for (type_name in types) {
+for (condition_name in conditions) {
   for (cmp in unique(model_grid$comparison)) {
     par(mfrow = c(length(measurements), 2), oma = c(0, 0, 2, 0))
     for (gas in measurements) {
-      m = models[[paste(type_name, gas, cmp, sep = " | ")]]
+      m = models[[paste(condition_name, gas, cmp, sep = " | ")]]
       if (is.null(m)) { plot.new(); plot.new(); next }
       r = resid(m, type = "normalized")
       plot(fitted(m), r, main = paste(gas, "- residuals vs fitted"),
@@ -146,7 +146,7 @@ for (type_name in types) {
       abline(h = 0, lty = 2)
       qqnorm(r, main = paste(gas, "- normal Q-Q")); qqline(r)
     }
-    mtext(paste(type_name, "|", cmp), outer = TRUE, cex = 1.2)
+    mtext(paste(condition_name, "|", cmp), outer = TRUE, cex = 1.2)
   }
 }
 dev.off()

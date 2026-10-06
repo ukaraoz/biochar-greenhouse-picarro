@@ -15,7 +15,7 @@ Pots were prepared with six soil treatments:
 | Biochar+MPSS | Mineral soil + biochar + MPSS inoculum |
 | Biochar+MPSS+SMT | Mineral soil + biochar + MPSS + SMT inocula |
 
-Gas flux measurements were taken under three conditions (`type`):
+Gas flux measurements were taken under three conditions (`Condition`):
 
 - **Light** — chamber closed under light
 - **CO2_Fixation** — chamber closed for CO₂ fixation measurement
@@ -34,8 +34,8 @@ greenhouse/
 │   ├── 01_load_data.R      # reads all .dat files → picarro_data
 │   ├── 02_join_metadata.R  # joins chamber windows → picarro_data_joined
 │   ├── 03_average.R        # averages readings per chamber window → picarro_data_averaged
-│   ├── 04_plot.R           # boxplots of gas measurements by treatment and type
-│   ├── 05_mixed_models.R   # pairwise repeated-measures mixed models per type × gas × comparison
+│   ├── 04_plot.R           # boxplots of gas measurements by treatment and condition
+│   ├── 05_mixed_models.R   # pairwise repeated-measures mixed models per condition × gas × comparison
 │   └── 06_write_markdown.R # writes the mixed-model results to a Markdown report
 ├── output/
 │   ├── figures/            # PDF plots
@@ -56,7 +56,7 @@ source("run_all.R")
 
 ### Inputs
 - **Raw Picarro output** — whitespace-delimited `.dat` files in `picarro_raw_data/`. Each file contains sub-second gas readings with an `EPOCH_TIME` Unix timestamp column.
-- **Measurement metadata** — Google Sheet (`Brodie_EBI_Greenhouse_PiccaroMeasurement_2026`) recording the start and end times of each chamber placement for each pot and measurement type.
+- **Measurement metadata** — Google Sheet (`Brodie_EBI_Greenhouse_PiccaroMeasurement_2026`) recording the start and end times of each chamber placement for each pot and measurement condition.
 
 ### Outputs
 
@@ -64,10 +64,10 @@ source("run_all.R")
 |---|---|
 | `output/tables/picarro_data_joined.xlsx` | Raw Picarro readings matched to chamber windows |
 | `output/tables/picarro_data_averaged.xlsx` | One mean value per gas per pot per measurement occasion |
-| `output/figures/boxplot_by_treatment.pdf` | Boxplots of all five gases by treatment and measurement type |
-| `output/tables/mixed_model_results.xlsx` | Pairwise mixed models (type × gas × comparison): treatment difference, 95% CI, % change, direction and p-values |
-| `output/tables/mixed_model_results.md` | Markdown report of the mixed-model results: overview grid and full tables per type |
-| `output/figures/mixed_model_diagnostics.pdf` | Residual diagnostics for each type × gas × comparison model |
+| `output/figures/boxplot_by_treatment.pdf` | Boxplots of all five gases by treatment and measurement condition |
+| `output/tables/mixed_model_results.xlsx` | Pairwise mixed models (condition × gas × comparison): treatment difference, 95% CI, % change, direction and p-values |
+| `output/tables/mixed_model_results.md` | Markdown report of the mixed-model results: overview grid and full tables per condition |
+| `output/figures/mixed_model_diagnostics.pdf` | Residual diagnostics for each condition × gas × comparison model |
 
 ## Dependencies
 

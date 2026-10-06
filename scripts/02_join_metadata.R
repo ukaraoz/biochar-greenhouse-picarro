@@ -4,7 +4,7 @@ metadata_url      = "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29
 afterwatering_url = "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1522788687#gid=1522788687"
 
 # read_metadata() returns a named list; unpack and stack into a single table
-# covering all three measurement types (Light, CO2_Fixation, After_Watering)
+# covering all three measurement conditions (Light, CO2_Fixation, After_Watering)
 metadata           = read_metadata(metadata_url, afterwatering_url)
 lightdark_metadata = metadata[["lightdark_metadata"]]
 afterwatering_metadata = metadata[["afterwatering_metadata"]]

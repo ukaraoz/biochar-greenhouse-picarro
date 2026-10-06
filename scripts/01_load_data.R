@@ -13,7 +13,7 @@ measurements = c("N2O", "CO2", "CH4", "H2O", "NH3")
 # columns retained after the metadata join; defined here so downstream scripts
 # can reference select_cols without repeating the list
 select_cols = c("PotID", "Soil", "Treatment", "Replicate", "Block", "Date",
-                measurements, "timestamp", "Order_Index", "type")
+                measurements, "timestamp", "Order_Index", "Condition")
 
 # read all .dat files, tag each row with its source file, and add a global
 # row_index for traceability back to the raw instrument output

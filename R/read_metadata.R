@@ -29,7 +29,7 @@ as_hms_text <- function(x) {
 #' Reads the LightDark and After-Watering measurement sheets from the project
 #' Google Sheet, converts raw time columns to POSIXct datetimes
 #' (America/Los_Angeles), pivots the LightDark sheet from wide to long so that
-#' Light and CO2_Fixation measurements are stacked as a \code{type} column, assigns
+#' Light and CO2_Fixation measurements are stacked as a \code{Condition} column, assigns
 #' a per-PotID \code{Order_Index} to each measurement occasion, and returns both
 #' tables in a named list ready for \code{bind_rows()}.
 #'
@@ -42,10 +42,10 @@ as_hms_text <- function(x) {
 #'   \describe{
 #'     \item{lightdark_metadata}{Long-format data frame with columns
 #'       \code{PotID}, \code{Date}, \code{Chamber_Start_DateTime},
-#'       \code{Chamber_End_DateTime}, \code{Order_Index}, and \code{type}
+#'       \code{Chamber_End_DateTime}, \code{Order_Index}, and \code{Condition}
 #'       (\code{"Light"} or \code{"CO2_Fixation"}).}
 #'     \item{afterwatering_metadata}{Data frame with the same key columns plus
-#'       \code{type = "After_Watering"}.}
+#'       \code{Condition = "After_Watering"}.}
 #'   }
 read_metadata <- function(metadata_url, afterwatering_url) {
   # --- LightDark sheet --------------------------------------------------
@@ -88,8 +88,8 @@ read_metadata <- function(metadata_url, afterwatering_url) {
     ungroup()
 
   # Pivot wide → long so Light and CO2_Fixation rows are stacked under a
-  # single `type` column. The regex pattern splits column names like
-  # "Chamber_Start_DateTime_Light" into value-key ("Start") and type ("Light"),
+  # single `Condition` column. The regex pattern splits column names like
+  # "Chamber_Start_DateTime_Light" into value-key ("Start") and condition ("Light"),
   # producing unified Chamber_Start_DateTime / Chamber_End_DateTime columns.
   lightdark_metadata_long = lightdark_metadata %>%
     rename(
@@ -105,17 +105,17 @@ read_metadata <- function(metadata_url, afterwatering_url) {
         Order_Index_Light,
         Order_Index_CO2_Fixation
       ),
-      names_to = c(".value", "type"),
+      names_to = c(".value", "Condition"),
       names_pattern = "^(?:Chamber_)?(Start|End|Order_Index)(?:_DateTime)?_(Light|CO2_Fixation)$"
     ) %>%
     rename(
       Chamber_Start_DateTime = Start,
       Chamber_End_DateTime = End
     ) %>%
-    relocate(type, .after = last_col())
+    relocate(Condition, .after = last_col())
 
   # --- After-Watering sheet ---------------------------------------------
-  # Already in long format (one measurement type per row), so only datetime
+  # Already in long format (one measurement condition per row), so only datetime
   # conversion and Order_Index assignment are needed.
   afterwatering_metadata = read_sheet(afterwatering_url, sheet = "After_WateringMeasurment") %>%
     select(-contains("...")) %>%
@@ -131,7 +131,7 @@ read_metadata <- function(metadata_url, afterwatering_url) {
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
       ),
-      type = "After_Watering",
+      Condition = "After_Watering",
       .keep = "unused"
     ) %>%
     group_by(PotID) %>%

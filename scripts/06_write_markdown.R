@@ -1,8 +1,8 @@
 # Write the pairwise mixed-model results (summary_table from 05_mixed_models.R)
-# to a Markdown report: an overview table per gas (types × comparisons,
-# significant differences in bold), followed by full results tables per type.
+# to a Markdown report: an overview table per gas (conditions × comparisons,
+# significant differences in bold), followed by full results tables per condition.
 
-# row and column order follow the comparison and type order used in 05
+# row and column order follow the comparison and condition order used in 05
 cmp_levels = sapply(comparisons, \(x) paste(x[2], "vs", x[1]))
 gas_label  = c(CO2 = "CO₂", CH4 = "CH₄", H2O = "H₂O", N2O = "N₂O", NH3 = "NH₃")
 gases      = intersect(names(gas_label), measurements)
@@ -21,7 +21,7 @@ md_data = summary_table %>%
 md_lines = c(
   "# Pairwise mixed-model results",
   "",
-  paste0("Pairwise repeated-measures linear mixed models, fitted separately for each measurement type × gas × ",
+  paste0("Pairwise repeated-measures linear mixed models, fitted separately for each measurement condition × gas × ",
          "treatment comparison (", nrow(md_data), " models). Each model uses only the 8 pots ",
          "(2 treatments × 4 replicates) of its comparison."),
   "",
@@ -43,26 +43,26 @@ md_lines = c(
   ""
 )
 
-# one table per gas: rows are measurement types, columns are comparisons
+# one table per gas: rows are measurement conditions, columns are comparisons
 for (g in gases) {
   md_lines = c(md_lines, paste("###", gas_label[g]), "",
-               paste0("| Type | ", paste(cmp_levels, collapse = " | "), " |"),
+               paste0("| Condition | ", paste(cmp_levels, collapse = " | "), " |"),
                paste0("|---|", strrep("---|", length(cmp_levels))))
-  for (type_name in types) {
-    r = filter(md_data, gas == g, type == type_name)
+  for (condition_name in conditions) {
+    r = filter(md_data, gas == g, Condition == condition_name)
     cells = sapply(cmp_levels, \(cmp) r$cell[r$comparison == cmp])
-    md_lines = c(md_lines, sprintf("| %s | %s |", type_name, paste(cells, collapse = " | ")))
+    md_lines = c(md_lines, sprintf("| %s | %s |", condition_name, paste(cells, collapse = " | ")))
   }
   md_lines = c(md_lines, "")
 }
 
 md_lines = c(md_lines, "## Full results", "")
-for (type_name in types) {
-  md_lines = c(md_lines, paste("###", type_name), "",
+for (condition_name in conditions) {
+  md_lines = c(md_lines, paste("###", condition_name), "",
     "| Gas | Comparison | Reference mean | Test mean | Difference [95% CI] | % change | Direction | p | Interaction p |",
     "|---|---|---|---|---|---|---|---|---|")
   for (g in gases) for (cmp in cmp_levels) {
-    r = filter(md_data, type == type_name, gas == g, comparison == cmp)
+    r = filter(md_data, Condition == condition_name, gas == g, comparison == cmp)
     md_lines = c(md_lines, sprintf("| %s | %s | %s | %s | %s [%s, %s] | %+.1f%% | %s | %s | %s |",
       gas_label[g], cmp, format_num(r$mean_ref), format_num(r$mean_test),
       format_num(r$difference), format_num(r$CI_lower), format_num(r$CI_upper), r$percent_change,

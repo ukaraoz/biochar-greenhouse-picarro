@@ -17,11 +17,11 @@ treatment_colors = c(
 # pivot to long format so all five gas measurements can be mapped to facets;
 # each row becomes one (pot × occasion × gas) observation
 plot_data = picarro_data_averaged %>%
-  select(Soil, Treatment, type, all_of(measurements), PotID, Order_Index, Block) %>%
+  select(Soil, Treatment, Condition, all_of(measurements), PotID, Order_Index, Block) %>%
   tidyr::pivot_longer(cols = all_of(measurements), names_to = "measurement", values_to = "value")
 
 p = ggplot(plot_data,
-           aes(x = type,
+           aes(x = Condition,
                y = value,
                fill = factor(Treatment, levels = treatment_levels, ordered = TRUE))) +
   # outlier.shape = NA suppresses duplicate outlier points already shown by geom_point
@@ -31,7 +31,7 @@ p = ggplot(plot_data,
              position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +
   # free_y allows each gas panel to use its own y-axis scale (ranges differ widely)
   facet_wrap(~ measurement, scales = "free_y") +
-  labs(x = "Type", y = "Value", fill = "Treatment", shape = "Block") +
+  labs(x = "Condition", y = "Value", fill = "Treatment", shape = "Block") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = treatment_colors)
