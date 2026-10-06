@@ -7,3 +7,4 @@ picarro_raw_data/
 .Rhistory
 .RData
 .Rproj.user/
+.DS_Store
