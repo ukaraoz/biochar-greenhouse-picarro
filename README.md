@@ -35,7 +35,8 @@ greenhouse/
 │   ├── 02_join_metadata.R  # joins chamber windows → picarro_data_joined
 │   ├── 03_average.R        # averages readings per chamber window → picarro_data_averaged
 │   ├── 04_plot.R           # boxplots of gas measurements by treatment and type
-│   └── 05_mixed_models.R   # pairwise repeated-measures mixed models per type × gas × comparison
+│   ├── 05_mixed_models.R   # pairwise repeated-measures mixed models per type × gas × comparison
+│   └── 06_write_markdown.R # writes the mixed-model results to a Markdown report
 ├── output/
 │   ├── figures/            # PDF plots
 │   └── tables/             # Excel exports
@@ -49,7 +50,7 @@ greenhouse/
 source("run_all.R")
 ```
 
-`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the five pipeline scripts in order. A Google account with access to the metadata Google Sheet is required; the OAuth token is cached after the first interactive login via `googlesheets4::gs4_auth()`.
+`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the six pipeline scripts in order. A Google account with access to the metadata Google Sheet is required; the OAuth token is cached after the first interactive login via `googlesheets4::gs4_auth()`.
 
 ## Data
 
@@ -65,6 +66,7 @@ source("run_all.R")
 | `output/tables/picarro_data_averaged.xlsx` | One mean value per gas per pot per measurement occasion |
 | `output/figures/boxplot_by_treatment.pdf` | Boxplots of all five gases by treatment and measurement type |
 | `output/tables/mixed_model_results.xlsx` | Pairwise mixed models (type × gas × comparison): treatment difference, 95% CI, % change, direction and p-values |
+| `output/tables/mixed_model_results.md` | Markdown report of the mixed-model results: overview grid and full tables per type |
 | `output/figures/mixed_model_diagnostics.pdf` | Residual diagnostics for each type × gas × comparison model |
 
 ## Dependencies
