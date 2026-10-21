@@ -37,7 +37,8 @@ greenhouse/
 │   ├── 04_plot.R           # boxplots of gas measurements by treatment and condition
 │   ├── 05_mixed_models.R   # pairwise repeated-measures mixed models per condition × gas × comparison
 │   ├── 06_write_markdown.R # writes the mixed-model results to a Markdown report
-│   └── 07_write_overview_pdf.R # writes the overview tables to a one-page PDF
+│   ├── 07_write_overview_pdf.R # writes the overview tables to a one-page PDF
+│   └── 09_greenhouse_temperature.R # greenhouse temperature per chamber window (observed or imputed)
 ├── output/
 │   ├── figures/            # PDF plots
 │   └── tables/             # Excel exports
@@ -51,7 +52,7 @@ greenhouse/
 source("run_all.R")
 ```
 
-`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the seven pipeline scripts in order. A Google account with access to the metadata Google Sheet is required; the OAuth token is cached after the first interactive login via `googlesheets4::gs4_auth()`.
+`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the eight pipeline scripts in order. A Google account with access to the metadata Google Sheet and the greenhouse temperature CSV on Google Drive is required; the OAuth tokens are cached after the first interactive logins via `googlesheets4::gs4_auth()` and `googledrive::drive_auth()`.
 
 ## Data
 
@@ -66,6 +67,8 @@ source("run_all.R")
 | `output/tables/picarro_data_joined.xlsx` | Raw Picarro readings matched to chamber windows |
 | `output/tables/picarro_data_averaged.xlsx` | One mean value per gas per pot per measurement occasion |
 | `output/figures/boxplot_by_treatment.pdf` | Boxplots of all five gases by treatment and measurement condition |
+| `output/tables/chamber_window_temperature.xlsx` | Greenhouse temperature (°C) at the midpoint of each chamber window. `Temp_source` is `observed` (interpolated from the logger) or `imputed` (median daily cycle; the logger starts 2026-04-30), with a p10–p90 range for imputed values |
+| `output/figures/greenhouse_temperature.pdf` | Logged greenhouse temperature, the imputed daily cycle before logging began, and the chamber-window values |
 | `output/tables/mixed_model_results.xlsx` | Pairwise mixed models (condition × gas × comparison): treatment difference, 95% CI, % change, direction and p-values |
 | `output/tables/mixed_model_results.md` | Markdown report of the mixed-model results: overview grid and full tables per condition |
 | `output/tables/mixed_model_overview.pdf` | One-page PDF of the overview tables (% change and p per gas, condition and comparison) |
@@ -74,5 +77,5 @@ source("run_all.R")
 ## Dependencies
 
 ```r
-install.packages(c("googlesheets4", "dplyr", "tidyr", "ggplot2", "writexl", "nlme", "emmeans", "gridExtra"))
+install.packages(c("googlesheets4", "dplyr", "tidyr", "ggplot2", "writexl", "nlme", "emmeans", "gridExtra", "googledrive"))
 ```
