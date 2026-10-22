@@ -10,10 +10,12 @@ files = list.files(path = data_dir, full.names = TRUE, recursive = TRUE, pattern
 
 # gas measurement columns shared across averaging, joining, and plotting steps
 measurements = c("N2O", "CO2", "CH4", "H2O", "NH3")
+# water-vapour-corrected (dry) mole fractions, used for flux calculation
+dry_measurements = c("N2O_dry", "CO2_dry", "CH4_dry")
 # columns retained after the metadata join; defined here so downstream scripts
 # can reference select_cols without repeating the list
 select_cols = c("PotID", "Soil", "Treatment", "Replicate", "Block", "Date",
-                measurements, "timestamp", "Order_Index", "Condition")
+                measurements, dry_measurements, "timestamp", "Order_Index", "Condition")
 
 # read all .dat files, tag each row with its source file, and add a global
 # row_index for traceability back to the raw instrument output
