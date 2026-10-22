@@ -74,7 +74,7 @@ plot_flux_fit = function(gas_name, trt) {
     scale_y_continuous(expand = expansion(mult = c(0.05, 0.6)), n.breaks = 3) +
     guides(color = guide_legend(override.aes = list(size = 2, alpha = 1, linewidth = 1))) +
     labs(title = sprintf("%s flux fits: %s", gas_name, trt),
-         subtitle = sprintf("Lines: chosen model (LM linear, HM Hutchinson-Mosier). Labels: flux in %s; * below MDF.",
+         subtitle = sprintf("Lines: chosen model (LM linear, HM Hutchinson-Mosier). Labels: flux in %s; * below MDF (minimal detectable flux).",
                             filter(fit_results, gas == gas_name)$units[1]),
          x = "Seconds since chamber closure", y = gas_axis_labels[[gas_name]], color = "Replicate") +
     theme_bw(base_size = 11) +
