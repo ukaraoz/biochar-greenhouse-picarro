@@ -49,8 +49,9 @@ as_hms_text <- function(x) {
 #'   }
 read_metadata <- function(metadata_url, afterwatering_url) {
   # --- LightDark sheet --------------------------------------------------
-  # The sheet stores Light and CO2_Fixation windows as paired wide columns;
-  # we convert the raw hh:mm:ss time strings to POSIXct before pivoting.
+  # The sheet stores Light and Dark windows as paired wide columns; the Dark
+  # (CO2 fixation) window is labelled CO2_Fixation in the pipeline.
+  # We convert the raw hh:mm:ss time strings to POSIXct before pivoting.
   # .keep = "unused" drops the original raw time columns after mutate.
   lightdark_metadata = read_sheet(metadata_url, sheet = "LightDark_Measurment") %>%
     # googlesheets4 sometimes appends "...N" sentinel columns — remove them
@@ -68,12 +69,12 @@ read_metadata <- function(metadata_url, afterwatering_url) {
         tz = "America/Los_Angeles"
       ),
       Chamber_Start_DateTime_CO2_Fixation = as.POSIXct(
-        paste(as.Date(Date), as_hms_text(Chamber_Start_Time_CO2_Fixation_hh_mm_ss)),
+        paste(as.Date(Date), as_hms_text(Chamber_Start_Time_Dark_hh_mm_ss)),
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
       ),
       Chamber_End_DateTime_CO2_Fixation = as.POSIXct(
-        paste(as.Date(Date), as_hms_text(Chamber_End_Time_CO2_Fixation_hh_mm_ss)),
+        paste(as.Date(Date), as_hms_text(Chamber_End_Time_Dark_hh_mm_ss)),
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
       ),
