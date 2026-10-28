@@ -5,7 +5,7 @@ library(ggplot2)
 # occasions, columns are conditions, the four replicates overlaid. Written as
 # 300-dpi PNGs to output/figures/flux_fits/. Uses flux_input, flux_results and
 # deadband_s from 10_calculate_flux.R.
-condition_labels = c("Light" = "Light", "CO2_Fixation" = "Dark (CO2_Fixation)",
+condition_labels = c("Light" = "Light", "Dark" = "Dark",
                      "After_Watering" = "After watering")
 gas_columns = c(CO2 = "CO2dry_ppm", CH4 = "CH4dry_ppb", N2O = "N2Odry_ppb")
 gas_axis_labels = c(CO2 = "CO2 dry mole fraction (ppm)", CH4 = "CH4 dry mole fraction (ppb)",

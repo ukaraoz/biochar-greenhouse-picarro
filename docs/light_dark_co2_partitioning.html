@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Light–Dark CO₂ Partitioning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column; figure 1 compares the two chambers side by side, figure 2 is a signed number line for the arithmetic */
+:root {
+  --bg: #f5f7f6;
+  --surface: #ffffff;
+  --ink: #1c2420;
+  --muted: #5d6a64;
+  --rule: #d4dcd8;
+  --fix: #2f8a3e;          /* CO2 taken in by photosynthesis */
+  --fix-soft: #e3f2e5;
+  --resp: #c2551f;         /* CO2 released by respiration */
+  --resp-soft: #f8e6dc;
+  --net: #3a5fa0;          /* net flux measured by the analyser */
+  --net-soft: #e4ebf6;
+  --soil: #8a6a4a;
+  --soil-fill: #c9a982;
+  --pot: #b76e4c;
+  --chamber: rgba(120, 160, 190, 0.08);
+  --cover: rgba(28, 36, 32, 0.78);
+  --sun: #e2a51b;
+  --display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121715; --surface: #1a211e; --ink: #e3ebe7; --muted: #9eaba5; --rule: #2f3934;
+    --fix: #6fcf7c; --fix-soft: #183320; --resp: #f08a5a; --resp-soft: #3a2218;
+    --net: #8fb1ea; --net-soft: #1b2638; --soil: #b39373; --soil-fill: #6e5640; --pot: #a8644a;
+    --chamber: rgba(140, 180, 210, 0.07); --cover: rgba(0, 0, 0, 0.72); --sun: #f2c14e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121715; --surface: #1a211e; --ink: #e3ebe7; --muted: #9eaba5; --rule: #2f3934;
+  --fix: #6fcf7c; --fix-soft: #183320; --resp: #f08a5a; --resp-soft: #3a2218;
+  --net: #8fb1ea; --net-soft: #1b2638; --soil: #b39373; --soil-fill: #6e5640; --pot: #a8644a;
+  --chamber: rgba(140, 180, 210, 0.07); --cover: rgba(0, 0, 0, 0.72); --sun: #f2c14e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--body); }
+.page { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 56px; display: flex; flex-direction: column; gap: 32px; }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 4.5vw, 38px); line-height: 1.15; }
+h2 { font-size: 21px; line-height: 1.25; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--net); }
+header { display: flex; flex-direction: column; gap: 12px; }
+.lede { color: var(--muted); font-size: 16px; }
+.qty { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+section { display: flex; flex-direction: column; gap: 14px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.fig-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; }
+.fig-scroll svg { display: block; width: 100%; height: auto; min-width: 640px; color: var(--ink); }
+figcaption { font-size: 14px; color: var(--muted); max-width: 72ch; }
+
+/* svg classes (styled from the page so both themes work) */
+.t { font: 400 12.5px var(--body); fill: currentColor; }
+.t-sm { font: 400 11.5px var(--body); fill: var(--muted); }
+.t-title { font: 600 14px var(--body); fill: currentColor; letter-spacing: .02em; }
+.t-mono { font: 500 13px var(--mono); fill: currentColor; }
+.t-fix { fill: var(--fix); } .t-resp { fill: var(--resp); } .t-net { fill: var(--net); }
+.chamber { fill: var(--chamber); stroke: currentColor; stroke-width: 1.5; }
+.cover { fill: var(--cover); }
+.base { stroke: currentColor; stroke-width: 2; }
+.pot { fill: var(--pot); }
+.soil { fill: var(--soil-fill); }
+.root { fill: none; stroke: var(--soil); stroke-width: 1.6; stroke-linecap: round; }
+.blade { fill: none; stroke: var(--fix); stroke-width: 3; stroke-linecap: round; }
+.blade.dim { opacity: .55; }
+.microbe { fill: var(--surface); stroke: var(--soil); stroke-width: 1.2; }
+.a-fix { fill: none; stroke: var(--fix); stroke-width: 3.5; }
+.a-resp { fill: none; stroke: var(--resp); stroke-width: 2.4; }
+.head-fix { fill: var(--fix); } .head-resp { fill: var(--resp); } .head-net { fill: var(--net); }
+.spark-box { fill: var(--surface); stroke: var(--rule); }
+.spark { fill: none; stroke: var(--net); stroke-width: 2.4; stroke-linecap: round; }
+.sun { fill: var(--sun); } .ray { stroke: var(--sun); stroke-width: 2; stroke-linecap: round; }
+.off { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
+.axis { stroke: currentColor; stroke-width: 1.2; }
+.grid { stroke: var(--rule); stroke-width: 1; }
+.zero { stroke: currentColor; stroke-width: 1.5; }
+.bar-nee { fill: var(--net); } .bar-er { fill: var(--resp); } .bar-gpp { fill: var(--fix); }
+.bracket { stroke: currentColor; stroke-width: 1.2; fill: none; }
+
+/* explanation cards */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card .k { font: 600 13px/1 var(--mono); letter-spacing: .04em; }
+.card .k.net { color: var(--net); } .card .k.resp { color: var(--resp); } .card .k.fix { color: var(--fix); }
+.card .v { font: 500 24px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.card p { font-size: 14px; color: var(--muted); }
+.eq { font: 500 15px/1.6 var(--mono); background: var(--fix-soft); border-radius: 8px; padding: 12px 16px; overflow-x: auto; }
+ul.caveats { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+.note { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 14px; color: var(--muted); }
+a { color: var(--net); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--net); outline-offset: 2px; border-radius: 2px; }
+@media (max-width: 720px) { .cards { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<div class="page">
+  <header>
+    <span class="eyebrow">Biochar greenhouse · CO₂ flux</span>
+    <h1>Light–dark CO₂ partitioning</h1>
+    <p class="lede">Each pot is closed in the chamber twice in a row: once in the light, once in the dark. The light window measures the net result of photosynthesis and respiration; the dark window measures respiration alone. Subtracting one from the other gives the CO₂ the plants actually fixed.</p>
+  </header>
+
+  <section>
+    <h2>What happens inside the chamber</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 450" role="img" aria-label="Two chambers over the same pot. In the light, CO2 flows into the shoots by photosynthesis while shoots, roots and soil microbes release CO2 by respiration; the analyser sees CO2 fall, the net exchange NEE. In the dark, photosynthesis stops and only the three respiration flows remain, so CO2 rises; that is ecosystem respiration ER.">
+          <defs>
+            <marker id="hf" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head-fix"/></marker>
+            <marker id="hr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head-resp"/></marker>
+          </defs>
+
+          <!-- ============ LIGHT panel (x0 = 0) ============ -->
+          <g>
+            <text x="20" y="22" class="t-title">LIGHT · transparent chamber</text>
+            <g transform="translate(398 20)">
+              <circle r="9" class="sun"/>
+              <line x1="0" y1="-15" x2="0" y2="-12" class="ray"/><line x1="0" y1="12" x2="0" y2="15" class="ray"/>
+              <line x1="-15" y1="0" x2="-12" y2="0" class="ray"/><line x1="12" y1="0" x2="15" y2="0" class="ray"/>
+              <line x1="-11" y1="-11" x2="-9" y2="-9" class="ray"/><line x1="9" y1="9" x2="11" y2="11" class="ray"/>
+              <line x1="-11" y1="11" x2="-9" y2="9" class="ray"/><line x1="9" y1="-9" x2="11" y2="-11" class="ray"/>
+            </g>
+            <rect x="20" y="40" width="390" height="300" rx="14" class="chamber"/>
+            <line x1="12" y1="340" x2="418" y2="340" class="base"/>
+
+            <!-- pot + soil -->
+            <polygon points="130,258 270,258 258,332 142,332" class="pot"/>
+            <polygon points="134,264 266,264 257,328 143,328" class="soil"/>
+            <!-- roots -->
+            <path d="M200,264 C196,285 186,300 170,318" class="root"/>
+            <path d="M200,264 C203,288 212,304 228,320" class="root"/>
+            <path d="M200,264 L200,314" class="root"/>
+            <path d="M190,292 L178,298" class="root"/><path d="M208,295 L220,296" class="root"/>
+            <!-- microbes -->
+            <ellipse cx="152" cy="288" rx="4" ry="2.6" class="microbe"/><ellipse cx="164" cy="306" rx="4" ry="2.6" class="microbe"/>
+            <ellipse cx="243" cy="284" rx="4" ry="2.6" class="microbe"/><ellipse cx="248" cy="308" rx="4" ry="2.6" class="microbe"/>
+            <ellipse cx="185" cy="318" rx="4" ry="2.6" class="microbe"/><ellipse cx="226" cy="274" rx="4" ry="2.6" class="microbe"/>
+            <!-- shoots -->
+            <path d="M200,262 C195,212 180,172 160,142" class="blade"/>
+            <path d="M200,262 C200,202 205,162 200,118" class="blade"/>
+            <path d="M200,262 C206,216 222,182 242,156" class="blade"/>
+            <path d="M200,262 C190,222 174,204 148,194" class="blade"/>
+
+            <!-- photosynthesis: CO2 in -->
+            <path d="M48,104 C90,96 140,112 178,146" class="a-fix" marker-end="url(#hf)"/>
+            <text x="34" y="78" class="t t-fix">photosynthesis</text>
+            <text x="34" y="93" class="t-sm">CO₂ fixed into shoots</text>
+
+            <!-- respiration: CO2 out -->
+            <path d="M216,168 C246,150 270,140 296,134" class="a-resp" marker-end="url(#hr)"/>
+            <text x="304" y="130" class="t t-resp">shoot</text><text x="304" y="145" class="t t-resp">respiration</text>
+            <path d="M236,300 C252,282 270,258 290,240" class="a-resp" marker-end="url(#hr)"/>
+            <text x="298" y="238" class="t t-resp">root</text><text x="298" y="253" class="t t-resp">respiration</text>
+            <path d="M160,300 C146,282 128,262 110,244" class="a-resp" marker-end="url(#hr)"/>
+            <text x="102" y="226" class="t t-resp" text-anchor="end">microbial</text><text x="102" y="241" class="t t-resp" text-anchor="end">respiration</text>
+
+            <!-- analyser readout -->
+            <rect x="20" y="362" width="132" height="62" rx="6" class="spark-box"/>
+            <polyline points="30,376 60,383 90,391 120,399 142,405" class="spark"/>
+            <text x="30" y="418" class="t-sm">CO₂ in chamber, 10 min</text>
+            <text x="168" y="384" class="t t-net">CO₂ falls: uptake beats release</text>
+            <text x="168" y="408" class="t-mono t-net">NEE = −3.11 µmol m⁻² s⁻¹</text>
+          </g>
+
+          <!-- ============ DARK panel (x0 = 470) ============ -->
+          <g transform="translate(470 0)">
+            <text x="20" y="22" class="t-title">DARK · covered chamber</text>
+            <rect x="20" y="40" width="390" height="300" rx="14" class="chamber"/>
+            <rect x="20" y="40" width="390" height="300" rx="14" class="cover"/>
+            <line x1="12" y1="340" x2="418" y2="340" class="base"/>
+
+            <polygon points="130,258 270,258 258,332 142,332" class="pot"/>
+            <polygon points="134,264 266,264 257,328 143,328" class="soil"/>
+            <path d="M200,264 C196,285 186,300 170,318" class="root"/>
+            <path d="M200,264 C203,288 212,304 228,320" class="root"/>
+            <path d="M200,264 L200,314" class="root"/>
+            <path d="M190,292 L178,298" class="root"/><path d="M208,295 L220,296" class="root"/>
+            <ellipse cx="152" cy="288" rx="4" ry="2.6" class="microbe"/><ellipse cx="164" cy="306" rx="4" ry="2.6" class="microbe"/>
+            <ellipse cx="243" cy="284" rx="4" ry="2.6" class="microbe"/><ellipse cx="248" cy="308" rx="4" ry="2.6" class="microbe"/>
+            <ellipse cx="185" cy="318" rx="4" ry="2.6" class="microbe"/><ellipse cx="226" cy="274" rx="4" ry="2.6" class="microbe"/>
+            <path d="M200,262 C195,212 180,172 160,142" class="blade dim"/>
+            <path d="M200,262 C200,202 205,162 200,118" class="blade dim"/>
+            <path d="M200,262 C206,216 222,182 242,156" class="blade dim"/>
+            <path d="M200,262 C190,222 174,204 148,194" class="blade dim"/>
+
+            <!-- photosynthesis switched off -->
+            <path d="M48,104 C90,96 140,112 178,146" class="off"/>
+            <text x="34" y="78" class="t-sm" style="fill: #c9d3ce;">no photosynthesis</text>
+            <text x="34" y="93" class="t-sm" style="fill: #c9d3ce;">without light</text>
+
+            <path d="M216,168 C246,150 270,140 296,134" class="a-resp" marker-end="url(#hr)"/>
+            <text x="304" y="130" class="t t-resp">shoot</text><text x="304" y="145" class="t t-resp">respiration</text>
+            <path d="M236,300 C252,282 270,258 290,240" class="a-resp" marker-end="url(#hr)"/>
+            <text x="298" y="238" class="t t-resp">root</text><text x="298" y="253" class="t t-resp">respiration</text>
+            <path d="M160,300 C146,282 128,262 110,244" class="a-resp" marker-end="url(#hr)"/>
+            <text x="102" y="226" class="t t-resp" text-anchor="end">microbial</text><text x="102" y="241" class="t t-resp" text-anchor="end">respiration</text>
+
+            <rect x="20" y="362" width="132" height="62" rx="6" class="spark-box"/>
+            <polyline points="30,405 60,400 90,394 120,389 142,384" class="spark"/>
+            <text x="30" y="418" class="t-sm">CO₂ in chamber, 10 min</text>
+            <text x="168" y="384" class="t t-net">CO₂ rises: release only</text>
+            <text x="168" y="408" class="t-mono t-net">ER = +0.78 µmol m⁻² s⁻¹</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The same pot in both windows. Light lets photosynthesis pull CO₂ in (green) while shoots, roots and soil microbes keep releasing it (orange); the analyser only sees the sum. Covering the chamber removes the green arrow and leaves the three orange ones. Numbers: Biochar, replicate 1, occasion 10.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>From two measurements to three fluxes</h2>
+    <div class="cards">
+      <div class="card"><span class="k net">NEE · light window</span><span class="v">−3.11</span><p>Net ecosystem exchange: photosynthesis minus all respiration. Negative means the pot is taking CO₂ out of the air.</p></div>
+      <div class="card"><span class="k resp">ER · dark window</span><span class="v">+0.78</span><p>Ecosystem respiration: shoots, roots and soil microbes together. Always positive; CO₂ builds up in the chamber.</p></div>
+      <div class="card"><span class="k fix">GPP · calculated</span><span class="v">3.89</span><p>Gross primary production: CO₂ fixed by photosynthesis. Not measured directly; it is the gap between the other two.</p></div>
+    </div>
+    <div class="eq">GPP = ER − NEE = 0.78 − (−3.11) = 3.89 µmol CO₂ m⁻² s⁻¹</div>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 230" role="img" aria-label="Signed number line in micromoles CO2 per square metre per second. NEE is a bar from 0 down to minus 3.11, ER a bar from 0 up to plus 0.78, and GPP spans the full distance between them, 3.89.">
+          <!-- scale: x(v) = 680 + 160 v -->
+          <line x1="200" y1="28" x2="200" y2="180" class="grid"/>
+          <line x1="360" y1="28" x2="360" y2="180" class="grid"/>
+          <line x1="520" y1="28" x2="520" y2="180" class="grid"/>
+          <line x1="840" y1="28" x2="840" y2="180" class="grid"/>
+          <line x1="680" y1="22" x2="680" y2="186" class="zero"/>
+
+          <text x="16" y="52" class="t">NEE <tspan class="t-sm">(light)</tspan></text>
+          <rect x="182.4" y="38" width="497.6" height="22" rx="3" class="bar-nee"/>
+          <text x="174" y="54" class="t-mono t-net" text-anchor="end">−3.11</text>
+
+          <text x="16" y="102" class="t">ER <tspan class="t-sm">(dark)</tspan></text>
+          <rect x="680" y="88" width="124.8" height="22" rx="3" class="bar-er"/>
+          <text x="812" y="104" class="t-mono t-resp">+0.78</text>
+
+          <text x="16" y="152" class="t">GPP <tspan class="t-sm">(= ER − NEE)</tspan></text>
+          <rect x="182.4" y="138" width="622.4" height="22" rx="3" class="bar-gpp"/>
+          <text x="493.6" y="154" class="t-mono" text-anchor="middle" style="fill: #ffffff;">3.89</text>
+          <path d="M182.4,128 L182.4,132 L804.8,132 L804.8,128" class="bracket"/>
+
+          <line x1="160" y1="186" x2="880" y2="186" class="axis"/>
+          <text x="200" y="204" class="t-sm" text-anchor="middle">−3</text>
+          <text x="360" y="204" class="t-sm" text-anchor="middle">−2</text>
+          <text x="520" y="204" class="t-sm" text-anchor="middle">−1</text>
+          <text x="680" y="204" class="t-sm" text-anchor="middle">0</text>
+          <text x="840" y="204" class="t-sm" text-anchor="middle">+1</text>
+          <text x="520" y="224" class="t-sm" text-anchor="middle">µmol CO₂ m⁻² s⁻¹ · negative = into the pot, positive = out to the air</text>
+        </svg>
+      </div>
+      <figcaption>GPP is the distance between the two measured fluxes: everything the plants fixed, part of which (ER) is breathed straight back out, leaving NEE as the net uptake.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Things this method assumes</h2>
+    <ul class="caveats">
+      <li>The dark window really is dark. The protocol does not say whether the chamber was covered or the lights switched off; light leaking in would make ER look smaller.</li>
+      <li>Respiration in the light equals respiration in the dark. Leaves respire somewhat less in light, so GPP from this subtraction is an approximation.</li>
+      <li>The two windows see the same conditions. They run back to back, about 10 minutes each, so temperature and moisture are close but not identical.</li>
+      <li>Daytime snapshots. Daily totals need day length: the protocol gives 14–16 h light and 8–10 h dark.</li>
+    </ul>
+  </section>
+
+  <p class="note">Fluxes from goFlux fits of the dry CO₂ readings in each chamber window (pipeline script 10). Experiment protocol: <a href="https://docs.google.com/document/d/12pguhFinevDNARxmVrXZqBQZc2flD6XqkcNT2dJXbMQ/edit?tab=t.0" target="_blank" rel="noopener">Biochar Greenhouse Experiment Master Document</a>.</p>
+</div>

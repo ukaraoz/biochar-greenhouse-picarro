@@ -5,7 +5,7 @@ library(ggplot2)
 # minutes since the window's first reading; each condition is then shifted
 # into its own slot on the x-axis (Light, Dark, After watering) so the three
 # windows of one occasion sit side by side.
-condition_slots  = c("Light" = 0, "CO2_Fixation" = 1, "After_Watering" = 2)
+condition_slots  = c("Light" = 0, "Dark" = 1, "After_Watering" = 2)
 condition_labels = c("Light", "Dark", "After watering")
 slot_width = 12  # minutes; windows are ~10 min (max ~12)
 

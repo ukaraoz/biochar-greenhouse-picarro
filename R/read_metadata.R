@@ -29,7 +29,7 @@ as_hms_text <- function(x) {
 #' Reads the LightDark and After-Watering measurement sheets from the project
 #' Google Sheet, converts raw time columns to POSIXct datetimes
 #' (America/Los_Angeles), pivots the LightDark sheet from wide to long so that
-#' Light and CO2_Fixation measurements are stacked as a \code{Condition} column, assigns
+#' Light and Dark measurements are stacked as a \code{Condition} column, assigns
 #' a per-PotID \code{Order_Index} to each measurement occasion, and returns both
 #' tables in a named list ready for \code{bind_rows()}.
 #'
@@ -43,14 +43,13 @@ as_hms_text <- function(x) {
 #'     \item{lightdark_metadata}{Long-format data frame with columns
 #'       \code{PotID}, \code{Date}, \code{Chamber_Start_DateTime},
 #'       \code{Chamber_End_DateTime}, \code{Order_Index}, and \code{Condition}
-#'       (\code{"Light"} or \code{"CO2_Fixation"}).}
+#'       (\code{"Light"} or \code{"Dark"}).}
 #'     \item{afterwatering_metadata}{Data frame with the same key columns plus
 #'       \code{Condition = "After_Watering"}.}
 #'   }
 read_metadata <- function(metadata_url, afterwatering_url) {
   # --- LightDark sheet --------------------------------------------------
-  # The sheet stores Light and Dark windows as paired wide columns; the Dark
-  # (CO2 fixation) window is labelled CO2_Fixation in the pipeline.
+  # The sheet stores Light and Dark windows as paired wide columns.
   # We convert the raw hh:mm:ss time strings to POSIXct before pivoting.
   # .keep = "unused" drops the original raw time columns after mutate.
   lightdark_metadata = read_sheet(metadata_url, sheet = "LightDark_Measurment") %>%
@@ -68,12 +67,12 @@ read_metadata <- function(metadata_url, afterwatering_url) {
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
       ),
-      Chamber_Start_DateTime_CO2_Fixation = as.POSIXct(
+      Chamber_Start_DateTime_Dark = as.POSIXct(
         paste(as.Date(Date), as_hms_text(Chamber_Start_Time_Dark_hh_mm_ss)),
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
       ),
-      Chamber_End_DateTime_CO2_Fixation = as.POSIXct(
+      Chamber_End_DateTime_Dark = as.POSIXct(
         paste(as.Date(Date), as_hms_text(Chamber_End_Time_Dark_hh_mm_ss)),
         format = "%Y-%m-%d %H:%M:%S",
         tz = "America/Los_Angeles"
@@ -84,30 +83,30 @@ read_metadata <- function(metadata_url, afterwatering_url) {
     # Order_Index ranks measurement occasions chronologically within each pot
     mutate(
       Light_Order_Index = row_number(Chamber_Start_DateTime_Light),
-      CO2_Fixation_Order_Index = row_number(Chamber_Start_DateTime_CO2_Fixation)
+      Dark_Order_Index = row_number(Chamber_Start_DateTime_Dark)
     ) %>%
     ungroup()
 
-  # Pivot wide → long so Light and CO2_Fixation rows are stacked under a
+  # Pivot wide → long so Light and Dark rows are stacked under a
   # single `Condition` column. The regex pattern splits column names like
   # "Chamber_Start_DateTime_Light" into value-key ("Start") and condition ("Light"),
   # producing unified Chamber_Start_DateTime / Chamber_End_DateTime columns.
   lightdark_metadata_long = lightdark_metadata %>%
     rename(
       Order_Index_Light = Light_Order_Index,
-      Order_Index_CO2_Fixation = CO2_Fixation_Order_Index
+      Order_Index_Dark = Dark_Order_Index
     ) %>%
     tidyr::pivot_longer(
       cols = c(
         Chamber_Start_DateTime_Light,
         Chamber_End_DateTime_Light,
-        Chamber_Start_DateTime_CO2_Fixation,
-        Chamber_End_DateTime_CO2_Fixation,
+        Chamber_Start_DateTime_Dark,
+        Chamber_End_DateTime_Dark,
         Order_Index_Light,
-        Order_Index_CO2_Fixation
+        Order_Index_Dark
       ),
       names_to = c(".value", "Condition"),
-      names_pattern = "^(?:Chamber_)?(Start|End|Order_Index)(?:_DateTime)?_(Light|CO2_Fixation)$"
+      names_pattern = "^(?:Chamber_)?(Start|End|Order_Index)(?:_DateTime)?_(Light|Dark)$"
     ) %>%
     rename(
       Chamber_Start_DateTime = Start,

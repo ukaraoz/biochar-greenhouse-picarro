@@ -11,13 +11,13 @@ picarro_data_averaged = picarro_data_joined %>%
   mutate(
     # ordered factors enable correct legend ordering and axis sorting downstream
     Order_Index = factor(Order_Index, levels = 1:15, ordered = TRUE),
-    Condition = factor(Condition, levels = c("Light", "CO2_Fixation", "After_Watering"), ordered = TRUE),
+    Condition = factor(Condition, levels = c("Light", "Dark", "After_Watering"), ordered = TRUE),
     # combined label for plotting; outer() produces levels ordered by condition within
-    # each Order_Index (1.Light, 2.Light, ..., 1.CO2_Fixation, ...) via column-major
+    # each Order_Index (1.Light, 2.Light, ..., 1.Dark, ...) via column-major
     # reading of the resulting matrix
     Order_Index_Condition = factor(
       interaction(Order_Index, Condition, sep = "."),
-      levels = as.vector(outer(1:15, c("Light", "CO2_Fixation", "After_Watering"), paste, sep = ".")),
+      levels = as.vector(outer(1:15, c("Light", "Dark", "After_Watering"), paste, sep = ".")),
       ordered = TRUE
     )
   )

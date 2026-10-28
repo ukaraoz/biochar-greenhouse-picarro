@@ -18,7 +18,7 @@ Pots were prepared with six soil treatments:
 Gas flux measurements were taken under three conditions (`Condition`):
 
 - **Light** — chamber closed under light
-- **CO2_Fixation** — chamber closed for CO₂ fixation measurement
+- **Dark** — chamber closed in the dark (photosynthesis stops), so the CO₂ flux is ecosystem respiration; paired with Light to estimate CO₂ fixation (GPP = respiration − net exchange)
 - **After_Watering** — chamber closed after a watering event
 
 Each pot was measured repeatedly over time; `Order_Index` ranks measurement occasions chronologically within each pot.
@@ -46,7 +46,8 @@ greenhouse/
 │   ├── 08_plot_timeseries.R # raw readings over chamber windows, replicates overlaid
 │   ├── 09_greenhouse_temperature.R # greenhouse temperature per chamber window (observed or imputed)
 │   ├── 10_calculate_flux.R # CO2, CH4 and N2O fluxes per chamber window (goFlux)
-│   └── 11_plot_flux_fits.R # flux-fit diagnostic figures, one per gas and treatment
+│   ├── 11_plot_flux_fits.R # flux-fit diagnostic figures, one per gas and treatment
+│   └── 12_co2_partitioning.R # NEE, ER and GPP per pot and occasion from the light/dark CO2 fluxes
 ├── output/
 │   ├── figures/            # PDF plots
 │   └── tables/             # Excel exports
@@ -60,7 +61,7 @@ greenhouse/
 source("run_all.R")
 ```
 
-`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the eleven pipeline scripts in order. A Google account with access to the metadata Google Sheet and the greenhouse temperature CSV on Google Drive is required; the OAuth tokens are cached after the first interactive logins via `googlesheets4::gs4_auth()` and `googledrive::drive_auth()`.
+`run_all.R` sets `base` to the project root, sources the two function files in `R/`, then runs the twelve pipeline scripts in order. A Google account with access to the metadata Google Sheet and the greenhouse temperature CSV on Google Drive is required; the OAuth tokens are cached after the first interactive logins via `googlesheets4::gs4_auth()` and `googledrive::drive_auth()`.
 
 ## Data
 
@@ -80,10 +81,21 @@ source("run_all.R")
 | `output/figures/greenhouse_temperature.pdf` | Logged greenhouse temperature, the imputed daily cycle before logging began, and the chamber-window values |
 | `output/tables/flux_results.xlsx` | CO2 (µmol m⁻² s⁻¹), CH4 and N2O (nmol m⁻² s⁻¹) fluxes per chamber window from dry mole fractions: `best.flux` and its `model` (linear or Hutchinson–Mosier, chosen by goFlux `best.flux()`), both model estimates, minimal detectable flux (`MDF`) and `quality.check` flags |
 | `output/figures/flux_fits/flux_fits_<gas>_<treatment>.png` | Flux-fit diagnostics, 18 figures (3 gases × 6 treatments) at 300 dpi: dry mole fraction vs time since closure, one row per occasion and one column per condition, the four replicates overlaid with their fitted model and labelled flux (`*` below MDF), deadband shaded (~4–11 MB each) |
+| `output/tables/CO2_partitioning.xlsx` | Per pot and occasion: NEE (light flux), ER (dark flux), GPP = ER − NEE and NEE after watering, in µmol CO₂ m⁻² s⁻¹, with review flags (missing window, negative ER or GPP, room air, unusual light–dark timing, below MDF); second sheet has treatment means per occasion; further sheets give each pot's total GPP, ER and NEE over the experiment (g C m⁻², daily rates assuming a 15 h photoperiod and 24 h respiration, integrated between measurement dates), treatment means and Tukey pairwise comparisons from a Treatment + Block model |
+| `output/figures/CO2_partitioning_by_occasion.pdf` | GPP, ER and NEE over occasions for each treatment: individual pots and treatment mean |
+| `output/figures/CO2_partitioning_cumulative.pdf` | Page 1: cumulative GPP, ER and NEE over time per pot; page 2: end-of-experiment totals by treatment (pots and mean ± SE) |
 | `output/tables/mixed_model_results.xlsx` | Pairwise mixed models (condition × gas × comparison): treatment difference, 95% CI, % change, direction and p-values |
 | `output/tables/mixed_model_results.md` | Markdown report of the mixed-model results: overview grid and full tables per condition |
 | `output/tables/mixed_model_overview.pdf` | One-page PDF of the overview tables (% change and p per gas, condition and comparison) |
 | `output/figures/mixed_model_diagnostics.pdf` | Residual diagnostics for each condition × gas × comparison model |
+
+## Metadata corrections (to confirm with Slimane)
+
+Seven chamber windows in the metadata sheet have impossible times (an end before the start, or a 0–1 min window), so their readings were silently dropped. `data/metadata_corrections.csv` lists a proposed fix for each (sheet tab and row, recorded value, corrected value, reasoning) and `02_join_metadata.R` applies them, only while the sheet still holds the recorded value. The corrected times are inferred from the ~10 min window length and the measurement sequence and are **unconfirmed**: check them with Slimane, then fix the sheet (the local correction then stops applying) or mark the row confirmed. `02_join_metadata.R` also warns about any remaining window with missing times or a duration outside 8–13 min.
+
+## Known data gaps
+
+On 2026-04-29 (occasion 8, block B) the Picarro stopped logging between 14:24:01 and 17:17:14. The ten windows recorded in the sheet for that afternoon (Conv_BC-SMT_2_B Dark and After watering; Conv_BC-MPSS_2_B and Conv_BC-MPSS-SMT_2_B Light, Dark and After watering; Conv_Ctrl_2_B and Conv_BC_2_B After watering) have no readings in `picarro_raw_data/`, and Conv_BC-SMT_2_B Light is cut off after ~2 min. These measurements cannot be recovered unless another log file from that afternoon turns up. `02_join_metadata.R` warns about every window that matches no Picarro readings.
 
 ## Dependencies
 

@@ -84,6 +84,31 @@ flux_results = lapply(names(gas_precision), function(gastype) {
          best.flux, model, quality.check, LM.flux, HM.flux, MDF, LM.r2, HM.r2,
          LM.p.val, HM.k, k.max, g.fact, nb.obs, C0, Ct, everything(), -UniqueID)
 
+# Room-air flag: a window whose starting concentration is far from that day's
+# typical start may have trapped unusual room air. Start = median of the first
+# start_window_s after the deadband (robust to single noise spikes); flagged
+# when more than room_air_mads MADs from the day's median start for that gas.
+# Flag only, nothing is dropped. Meaning differs by gas: for CH4 it catches
+# windows where trapped CH4-rich air leaks out (false negative fluxes, e.g.
+# 2026-05-18 13:20-14:00); for CO2 high starts are common and usually harmless;
+# for N2O flags are rare and often the first window of a day.
+start_window_s = 30
+room_air_mads  = 5
+window_starts = flux_input %>%
+  filter(Etime >= 0, Etime < start_window_s) %>%
+  group_by(PotID, Order_Index, Condition) %>%
+  summarise(across(all_of(names(gas_precision)), \(x) median(x, na.rm = TRUE)), .groups = "drop") %>%
+  tidyr::pivot_longer(all_of(names(gas_precision)), names_to = "gas", values_to = "C_start") %>%
+  mutate(gas = sub("dry_pp[mb]$", "", gas))
+flux_results = flux_results %>%
+  left_join(window_starts, by = c("PotID", "Order_Index", "Condition", "gas")) %>%
+  group_by(gas, Date) %>%
+  mutate(C_start_day_median = median(C_start, na.rm = TRUE),
+         C_start_offset = C_start - C_start_day_median,
+         room_air_flag = abs(C_start_offset) > room_air_mads * mad(C_start, na.rm = TRUE)) %>%
+  ungroup() %>%
+  relocate(C_start, C_start_day_median, C_start_offset, room_air_flag, .after = quality.check)
+
 # writexl drops time zones and writes UTC; format as local time text instead
 writexl::write_xlsx(
   flux_results %>%

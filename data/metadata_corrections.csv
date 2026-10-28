@@ -1,0 +1,8 @@
+Sheet_tab,Sheet_row,PotID,Date,Condition,Field,Sheet_value,Corrected_value,Reason,Status
+After_WateringMeasurment,7,Conv_BC-MPSS-SMT_1_A,2026-03-31,After_Watering,Start,14:53:55,13:53:55,start after end (14:03:55); 10-min window ending 14:03:55,unconfirmed - check with Slimane
+LightDark_Measurment,19,Conv_BC-MPSS-SMT_3_C,2026-04-01,Dark,End,12:35:30,12:45:30,end equals start; 10-min window,unconfirmed - check with Slimane
+After_WateringMeasurment,160,Conv_BC_3_C,2026-04-27,After_Watering,End,10:02:20,12:02:20,end before start (11:52:20); next pot starts 12:02:50,unconfirmed - check with Slimane
+LightDark_Measurment,189,Conv_Ctrl_4_D,2026-04-30,Light,Start,13:21:00,13:12:00,1-min window; digits likely swapped; Dark starts 13:23:28,unconfirmed - check with Slimane
+LightDark_Measurment,205,Conv_BC-MPSS-SMT_2_B,2026-05-03,Dark,End,10:41:05,14:41:05,end before start (14:31:05); 10-min window,unconfirmed - check with Slimane
+LightDark_Measurment,201,Conv_Ctrl_2_B,2026-05-03,Dark,End,12:05:40,13:05:40,end before start (12:55:40); Light ended 12:55:25,unconfirmed - check with Slimane
+After_WateringMeasurment,298,Conv_BC_2_B,2026-05-17,After_Watering,End,02:12:50,14:12:50,end before start (14:02:50); 12-hour clock slip,unconfirmed - check with Slimane

@@ -41,7 +41,7 @@ model_data = picarro_data_averaged %>%
     PotID         = factor(PotID)
   )
 
-conditions = c("Light", "CO2_Fixation", "After_Watering")
+conditions = c("Light", "Dark", "After_Watering")
 
 # Fixed:  Treatment × Occasion — occasion means absorb conditions shared by all
 #         pots on a visit; the interaction tests whether the treatment
