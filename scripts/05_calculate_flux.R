@@ -38,15 +38,21 @@ flux_units = c(CO2dry_ppm = "umol m-2 s-1", CH4dry_ppb = "nmol m-2 s-1", N2Odry_
 # Tcham °C, gases as dry mole fractions. G2508 reports H2O in % (0.2-3.5 here),
 # so H2O_ppm = % × 10,000; goFlux's own import.G2508 assumes mmol/mol, which
 # would understate H2O tenfold, so the readings are converted here instead.
-# Tcham is the greenhouse air temperature for the window (observed or imputed,
-# from 09_greenhouse_temperature.R).
+# Tcham is the greenhouse air temperature for the window: Temp_mean from
+# 04_greenhouse_environment.R (window_summary_method, default "readings": mean of
+# the logger readings inside the window, or the closest readings if none),
+# falling back to the midpoint value Temp_C if Temp_mean is missing. Flux
+# scales with 1/T (kelvin), so 1 °C changes it by ~0.34%.
 flux_input = picarro_data_joined %>%
   inner_join(
     metadata_joined %>% select(PotID, Order_Index, Condition, Chamber_Start_DateTime),
     by = c("PotID", "Order_Index", "Condition")
   ) %>%
   inner_join(
-    chamber_temperature %>% select(PotID, Order_Index, Condition, Temp_C, Temp_source),
+    chamber_temperature %>%
+      transmute(PotID, Order_Index, Condition,
+                Temp_basis = if_else(is.na(Temp_mean), paste("midpoint", Temp_source), Temp_basis),
+                Temp_C = coalesce(Temp_mean, Temp_C)),
     by = c("PotID", "Order_Index", "Condition")
   ) %>%
   mutate(
@@ -70,7 +76,7 @@ flux_input = picarro_data_joined %>%
 # window identifiers to attach back to the per-window flux results
 window_info = flux_input %>%
   distinct(UniqueID, PotID, Soil, Treatment, Replicate, Block, Date, Order_Index, Condition,
-           Chamber_Start_DateTime, Temp_C, Temp_source)
+           Chamber_Start_DateTime, Temp_C, Temp_basis)
 
 flux_results = lapply(names(gas_precision), function(gastype) {
   goFlux(flux_input, gastype = gastype) %>%
@@ -80,7 +86,7 @@ flux_results = lapply(names(gas_precision), function(gastype) {
   bind_rows() %>%
   left_join(window_info, by = "UniqueID") %>%
   select(PotID, Soil, Treatment, Replicate, Block, Date, Order_Index, Condition,
-         Chamber_Start_DateTime, Temp_C, Temp_source, gas, units,
+         Chamber_Start_DateTime, Temp_C, Temp_basis, gas, units,
          best.flux, model, quality.check, LM.flux, HM.flux, MDF, LM.r2, HM.r2,
          LM.p.val, HM.k, k.max, g.fact, nb.obs, C0, Ct, everything(), -UniqueID)
 

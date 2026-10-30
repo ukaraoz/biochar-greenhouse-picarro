@@ -1,7 +1,7 @@
 library(ggplot2)
 
 # Partition CO2 exchange per pot and occasion from the paired chamber windows
-# (fluxes from 10_calculate_flux.R, µmol CO2 m-2 s-1, positive = to the air):
+# (fluxes from 05_calculate_flux.R, µmol CO2 m-2 s-1, positive = to the air):
 #   NEE = Light flux (net ecosystem exchange; negative = net uptake)
 #   ER  = Dark flux  (ecosystem respiration: shoots, roots, soil microbes)
 #   GPP = ER - NEE   (gross primary production; CO2 fixed by photosynthesis)
@@ -138,7 +138,7 @@ p = ggplot(plot_partitioning, aes(Order_Index, flux, color = quantity)) +
   theme_bw() +
   theme(legend.position = "top", panel.grid.minor = element_blank())
 
-ggsave(file.path(base, "output/figures/CO2_partitioning_by_occasion.pdf"), p, width = 13, height = 8)
+save_figure(file.path(base, "output/figures/CO2_partitioning_by_occasion.pdf"), function() print(p), width = 13, height = 8)
 
 # Cumulative exchange over time and end-point totals by treatment
 plot_cumulative = co2_cumulative %>%
@@ -168,7 +168,5 @@ p_totals = ggplot(co2_totals_long %>% mutate(quantity = factor(quantity, levels 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 35, hjust = 1), panel.grid.minor = element_blank())
 
-pdf(file.path(base, "output/figures/CO2_partitioning_cumulative.pdf"), width = 13, height = 8)
-print(p_cumulative)
-print(p_totals)
-dev.off()
+save_figure(file.path(base, "output/figures/CO2_partitioning_cumulative.pdf"),
+            function() { print(p_cumulative); print(p_totals) }, width = 13, height = 8)

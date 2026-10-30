@@ -4,7 +4,7 @@ library(ggplot2)
 # the fitted model, for every window. One figure per gas × treatment: rows are
 # occasions, columns are conditions, the four replicates overlaid. Written as
 # 300-dpi PNGs to output/figures/flux_fits/. Uses flux_input, flux_results and
-# deadband_s from 10_calculate_flux.R.
+# deadband_s from 05_calculate_flux.R.
 condition_labels = c("Light" = "Light", "Dark" = "Dark",
                      "After_Watering" = "After watering")
 gas_columns = c(CO2 = "CO2dry_ppm", CH4 = "CH4dry_ppb", N2O = "N2Odry_ppb")

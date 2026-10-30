@@ -1,7 +1,7 @@
-# Google Sheet URLs — the main sheet holds LightDark; afterwatering is a
-# separate tab referenced by its gid parameter
-metadata_url      = "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw"
-afterwatering_url = "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1522788687#gid=1522788687"
+# Google Sheet URLs from config.yml — the main sheet holds LightDark;
+# afterwatering is a separate tab referenced by its gid parameter
+metadata_url      = config$data_sources$metadata_sheet
+afterwatering_url = config$data_sources$afterwatering_sheet
 
 # read_metadata() returns a named list; unpack and stack into a single table
 # covering all three measurement conditions (Light, Dark, After_Watering)
@@ -33,19 +33,10 @@ for (i in seq_len(nrow(metadata_corrections))) {
 }
 
 # Flag chamber windows with missing or implausible times, usually typos in the
-# sheet (e.g. an end time before the start time). No readings can fall inside
-# such a window, so without this check the measurement drops out silently.
-# Chamber closures are ~10 min.
+# sheet (check_window_durations() in R/measurement_windows.R).
 window_min_minutes = 8
 window_max_minutes = 13
-metadata_window_issues = metadata_joined %>%
-  mutate(Duration_min = round(as.numeric(Chamber_End_DateTime - Chamber_Start_DateTime, units = "mins"), 1)) %>%
-  filter(is.na(Duration_min) | Duration_min < window_min_minutes | Duration_min > window_max_minutes) %>%
-  transmute(PotID, Date, Condition,
-            Start = format(Chamber_Start_DateTime, "%H:%M:%S"),
-            End = format(Chamber_End_DateTime, "%H:%M:%S"),
-            Duration_min) %>%
-  arrange(Date, PotID)
+metadata_window_issues = check_window_durations(metadata_joined, window_min_minutes, window_max_minutes)
 
 if (nrow(metadata_window_issues) > 0) {
   warning(nrow(metadata_window_issues), " chamber window(s) in the metadata sheet have missing times or a ",
@@ -72,14 +63,7 @@ picarro_data_joined = picarro_data %>%
 # Report valid chamber windows that matched no Picarro readings (e.g. the
 # analyser was not logging, as on 2026-04-29 between 14:24 and 17:17), so the
 # missing measurements are listed rather than dropped silently.
-windows_without_data = metadata_joined %>%
-  filter(!is.na(Chamber_Start_DateTime), Chamber_End_DateTime > Chamber_Start_DateTime) %>%
-  anti_join(distinct(picarro_data_joined, PotID, Order_Index, Condition),
-            by = c("PotID", "Order_Index", "Condition")) %>%
-  transmute(PotID, Date, Condition,
-            Start = format(Chamber_Start_DateTime, "%H:%M:%S"),
-            End = format(Chamber_End_DateTime, "%H:%M:%S")) %>%
-  arrange(Date, Start)
+windows_without_data = find_windows_without_data(metadata_joined, picarro_data_joined)
 
 if (nrow(windows_without_data) > 0) {
   warning(nrow(windows_without_data), " chamber window(s) have no Picarro readings and are missing from the data:\n",
@@ -88,3 +72,12 @@ if (nrow(windows_without_data) > 0) {
 }
 
 writexl::write_xlsx(picarro_data_joined, file.path(base, "output/tables/picarro_data_joined.xlsx"))
+
+# Timeline of Picarro logging, chamber windows and greenhouse log times per
+# measurement day (plot_window_timeline() in R/measurement_windows.R,
+# read_greenhouse_log() in R/read_greenhouse.R)
+p = plot_window_timeline(metadata_joined,
+                         picarro_log_segments(picarro_data, days = unique(metadata_joined$Date)),
+                         logger_times = greenhouse_log_times(read_greenhouse_log(config$data_sources$greenhouse_log)))
+save_figure(file.path(base, "output/figures/picarro_log_timeline.pdf"), function() print(p),
+            width = 15, height = 15, pdf_device = grDevices::cairo_pdf)

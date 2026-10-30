@@ -12,6 +12,9 @@ files = list.files(path = data_dir, full.names = TRUE, recursive = TRUE, pattern
 measurements = c("N2O", "CO2", "CH4", "H2O", "NH3")
 # water-vapour-corrected (dry) mole fractions, used for flux calculation
 dry_measurements = c("N2O_dry", "CO2_dry", "CH4_dry")
+# treatment order for figure facets, legends and loops
+treatment_levels = c("Conventional soil", "Organic soil", "Biochar",
+                     "Biochar+SMT", "Biochar+MPSS", "Biochar+MPSS+SMT")
 # columns retained after the metadata join; defined here so downstream scripts
 # can reference select_cols without repeating the list
 select_cols = c("PotID", "Soil", "Treatment", "Replicate", "Block", "Date",

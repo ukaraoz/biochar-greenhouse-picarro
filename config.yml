@@ -1,0 +1,15 @@
+# Source data locations read by the pipeline. run_all.R loads this file into
+# `config` (read_config() in R/config.R); scripts use config$data_sources$<name>.
+# Edit a link here when a source file is replaced; no code change is needed.
+
+data_sources:
+  # Google Sheet "Brodie_EBI_Greenhouse_PiccaroMeasurement_2026": chamber start
+  # and end times, LightDark_Measurment tab (Light and Dark windows)
+  metadata_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw"
+
+  # Same Sheet, After_WateringMeasurment tab (After-watering windows)
+  afterwatering_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1522788687#gid=1522788687"
+
+  # Greenhouse_Temperature.csv on Google Drive: indoor temperature, relative
+  # humidity and PAR light, 2026-03-01 to 2026-05-30
+  greenhouse_log: "https://drive.google.com/file/d/184jLi4XAqnDkcbxAWHGWeuM4ZFq0i-6E"
