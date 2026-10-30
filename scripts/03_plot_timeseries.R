@@ -46,7 +46,7 @@ save_figure(file.path(base, "output/figures/timeseries_by_replicate.pdf"), funct
                                      "After watering" = "#2080E0"),
                           breaks = condition_labels, guide = "none") +
         scale_color_brewer(palette = "Dark2") +
-        labs(title = paste0(gas, " — ", trt),
+        labs(title = paste0(gas, " — ", treatment_labels[[trt]]),
              x = paste0("Condition (each range = ", slot_width, " min from chamber closure)"),
              y = gas, color = "Replicate") +
         theme_bw() +

@@ -215,7 +215,8 @@ p = ggplot(plot_occasion, aes(Order_Index, value, color = series)) +
   geom_line(aes(group = interaction(PotID, series)), alpha = 0.25, linewidth = 0.4) +
   stat_summary(fun = mean, geom = "line", linewidth = 1.1) +
   stat_summary(fun = mean, geom = "point", size = 1.4) +
-  facet_grid(panel ~ Treatment, scales = "free_y", switch = "y") +
+  facet_grid(panel ~ Treatment, scales = "free_y", switch = "y",
+             labeller = labeller(Treatment = treatment_labels_wrapped)) +
   ggh4x::force_panelsizes(rows = c(2.2, 1, 1, 1)) +
   scale_color_manual(values = c(partition_colors, environment_colors),
                      breaks = names(partition_colors),
@@ -239,7 +240,7 @@ plot_cumulative = co2_cumulative %>%
 p_cumulative = ggplot(plot_cumulative, aes(Date, cumulative, color = quantity)) +
   geom_hline(yintercept = 0, linewidth = 0.3, color = "grey50") +
   geom_line(aes(group = interaction(PotID, quantity)), linewidth = 0.5, alpha = 0.6) +
-  facet_wrap(~ Treatment, ncol = 3) +
+  facet_wrap(~ Treatment, ncol = 3, labeller = labeller(Treatment = treatment_labels)) +
   scale_color_manual(values = partition_colors, name = NULL,
                      labels = c(GPP = "GPP (fixed)", ER = "ER (respired)", NEE = "NEE (net; negative = uptake)")) +
   labs(x = NULL, y = expression(Cumulative~CO[2]~exchange~(g~C~m^{-2}))) +
@@ -254,9 +255,10 @@ p_totals = ggplot(co2_totals_long %>% mutate(quantity = factor(quantity, levels 
   facet_wrap(~ quantity, scales = "free_y",
              labeller = labeller(quantity = c(GPP = "GPP (fixed)", ER = "ER (respired)", NEE = "NEE (net; negative = uptake)"))) +
   scale_color_manual(values = partition_colors, guide = "none") +
+  scale_x_discrete(labels = treatment_labels_wrapped) +
   labs(x = NULL, y = expression(Total~over~experiment~(g~C~m^{-2}))) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1), panel.grid.minor = element_blank())
+  theme(axis.text.x = element_text(angle = 35, hjust = 1, size = rel(0.8)), panel.grid.minor = element_blank())
 
 save_figure(file.path(base, "output/figures/CO2_partitioning_cumulative.pdf"),
             function() { print(p_cumulative); print(p_totals) }, width = 13, height = 8)

@@ -15,6 +15,18 @@ dry_measurements = c("N2O_dry", "CO2_dry", "CH4_dry")
 # treatment order for figure facets, legends and loops
 treatment_levels = c("Conventional soil", "Organic soil", "Biochar",
                      "Biochar+SMT", "Biochar+MPSS", "Biochar+MPSS+SMT")
+# treatment names shown in figures, keyed by the PotID prefix
+treatment_names = c("Conv_Ctrl" = "Conv. soil", "Org_Ctrl" = "Organic soil", "Conv_BC" = "Conv. soil + biochar",
+                    "Conv_BC-SMT" = "Conv. soil + biochar + SMT inoculum",
+                    "Conv_BC-MPSS" = "Conv. soil + biochar + MPSS inoculum",
+                    "Conv_BC-MPSS-SMT" = "Conv. soil + biochar + MPSS + SMT inocula", "SMT pellet" = "SMT pellet")
+# PotID prefix of each Treatment value (checked against the sheet in 02_join_metadata.R)
+treatment_prefixes = c("Conventional soil" = "Conv_Ctrl", "Organic soil" = "Org_Ctrl", "Biochar" = "Conv_BC",
+                       "Biochar+SMT" = "Conv_BC-SMT", "Biochar+MPSS" = "Conv_BC-MPSS",
+                       "Biochar+MPSS+SMT" = "Conv_BC-MPSS-SMT")
+# figure labels keyed by Treatment value, and wrapped for axes and facet strips
+treatment_labels = setNames(treatment_names[treatment_prefixes], names(treatment_prefixes))
+treatment_labels_wrapped = vapply(treatment_labels, \(s) paste(strwrap(s, 22), collapse = "\n"), character(1))
 # columns retained after the metadata join; defined here so downstream scripts
 # can reference select_cols without repeating the list
 select_cols = c("PotID", "Soil", "Treatment", "Replicate", "Block", "Date",

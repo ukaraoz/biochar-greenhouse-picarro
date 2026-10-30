@@ -10,6 +10,16 @@ lightdark_metadata = metadata[["lightdark_metadata"]]
 afterwatering_metadata = metadata[["afterwatering_metadata"]]
 metadata_joined    = bind_rows(lightdark_metadata, afterwatering_metadata)
 
+# figure labels map Treatment to treatment_names through the PotID prefix
+# (treatment_prefixes in 01_load_data.R); stop if the sheet disagrees
+prefix_mismatch = metadata_joined %>%
+  distinct(PotID = trimws(PotID), Treatment) %>%
+  filter(is.na(treatment_prefixes[Treatment]) | sub("_[0-9]+_[A-D]$", "", PotID) != treatment_prefixes[Treatment])
+if (nrow(prefix_mismatch) > 0) {
+  stop("PotID prefix does not match treatment_prefixes for: ",
+       paste(prefix_mismatch$PotID, prefix_mismatch$Treatment, sep = " / ", collapse = ", "), call. = FALSE)
+}
+
 # End-point total water added to each pot, summed over its waterings
 # (total_water_added() in R/read_metadata.R)
 # and water use efficiency (end-point shoot dry weight / total water,
@@ -18,25 +28,53 @@ water_per_pot = total_water_added(afterwatering_metadata) %>%
   water_use_efficiency(config$data_sources$endpoint_sheet, .)
 writexl::write_xlsx(water_per_pot, file.path(base, "output/tables/water_added_per_pot.xlsx"))
 
-# Water use efficiency by treatment: one point per pot (shape = block),
-# treatment mean ± SD in black
-p = ggplot2::ggplot(water_per_pot %>% mutate(Treatment = factor(Treatment, levels = treatment_levels)),
-                    ggplot2::aes(Treatment, WUE_mg_per_g)) +
-  ggplot2::geom_point(ggplot2::aes(color = Treatment, shape = Block), size = 2.5,
-                      position = ggplot2::position_jitter(width = 0.12, height = 0, seed = 1)) +
-  ggplot2::stat_summary(fun.data = ggplot2::mean_sdl, fun.args = list(mult = 1),
-                        geom = "pointrange", color = "black", size = 0.4,
-                        position = ggplot2::position_nudge(x = 0.3)) +
-  ggplot2::scale_color_manual(values = timeline_treatment_colors, guide = "none") +
-  ggplot2::expand_limits(y = 0) +
-  ggplot2::labs(title = "Water use efficiency",
-                subtitle = "End-point shoot dry weight / total water added over 15 waterings; black: treatment mean ± SD",
-                x = NULL, y = "Water use efficiency (mg shoot dry weight / g water)") +
-  ggplot2::theme_bw() +
-  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 35, hjust = 1),
-                 panel.grid.minor = ggplot2::element_blank())
+# Boxplot per treatment with the 4 pots overlaid (jittered), one panel per
+# variable (data: one row per pot with Treatment, variable and value)
+plot_treatment_boxplot = function(data) {
+  ggplot2::ggplot(data %>% mutate(Treatment = factor(Treatment, levels = treatment_levels)),
+                  ggplot2::aes(Treatment, value)) +
+    # outliers are drawn by the overlaid points
+    ggplot2::geom_boxplot(fill = "grey90", color = "grey35", width = 0.55, outlier.shape = NA) +
+    ggplot2::geom_point(position = ggplot2::position_jitter(width = 0.12, height = 0, seed = 1),
+                        size = 1.8, alpha = 0.8) +
+    ggplot2::facet_wrap(~ variable, scales = "free_y", strip.position = "left") +
+    ggplot2::scale_x_discrete(labels = treatment_labels_wrapped) +
+    ggplot2::expand_limits(y = 0) +
+    ggplot2::labs(x = NULL, y = NULL) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   strip.placement = "outside", strip.background = ggplot2::element_blank(),
+                   strip.text = ggplot2::element_text(size = ggplot2::rel(1.1)))
+}
+
+# Water use efficiency by treatment
+p = plot_treatment_boxplot(water_per_pot %>%
+                             transmute(Treatment, value = WUE_mg_per_g,
+                                       variable = "Water use efficiency (mg shoot dry weight / g water)"))
 save_figure(file.path(base, "output/figures/water_use_efficiency.pdf"), function() print(p),
-            width = 7, height = 5)
+            width = 9, height = 5)
+
+# Plant measurements over time (6 dates), averaged per pot over the dates
+# (read_plant_measurements() and plant_measurements_per_pot() in R/read_metadata.R)
+plant_measurements = read_plant_measurements(config$data_sources$plant_measurements_sheet)
+plant_per_pot = plant_measurements_per_pot(plant_measurements) %>%
+  inner_join(distinct(water_per_pot, PotID, Treatment), by = "PotID") %>%
+  relocate(Treatment, .after = PotID)
+if (nrow(plant_per_pot) != nrow(water_per_pot)) {
+  warning("plant measurements found for ", nrow(plant_per_pot), " of ", nrow(water_per_pot), " pots", call. = FALSE)
+}
+writexl::write_xlsx(plant_per_pot, file.path(base, "output/tables/plant_measurements_per_pot.xlsx"))
+
+plant_variables = c(Shoot_Count = "Shoot count", Shoot_Height_cm = "Shoot height (cm)",
+                    Chlorophyll_Index = "Chlorophyll index (leaves 1-5)")
+p = plot_treatment_boxplot(plant_per_pot %>%
+                             tidyr::pivot_longer(all_of(names(plant_variables)), names_to = "variable") %>%
+                             mutate(variable = factor(plant_variables[variable], levels = plant_variables))) +
+  # three panels side by side: full treatment names, angled
+  ggplot2::scale_x_discrete(labels = treatment_labels) +
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 35, hjust = 1))
+save_figure(file.path(base, "output/figures/plant_measurements.pdf"), function() print(p),
+            width = 14, height = 6)
 
 # Local fixes for chamber-time typos in the metadata sheet, listed in
 # data/metadata_corrections.csv with the sheet row, reason and status. A fix is
@@ -106,6 +144,7 @@ writexl::write_xlsx(picarro_data_joined, file.path(base, "output/tables/picarro_
 # read_greenhouse_log() in R/read_greenhouse.R)
 p = plot_window_timeline(metadata_joined,
                          picarro_log_segments(picarro_data, days = unique(metadata_joined$Date)),
-                         logger_times = greenhouse_log_times(read_greenhouse_log(config$data_sources$greenhouse_log)))
+                         logger_times = greenhouse_log_times(read_greenhouse_log(config$data_sources$greenhouse_log)),
+                         treatment_labels = treatment_labels)
 save_figure(file.path(base, "output/figures/picarro_log_timeline.pdf"), function() print(p),
             width = 15, height = 15, pdf_device = grDevices::cairo_pdf)

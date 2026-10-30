@@ -214,6 +214,8 @@ timeline_treatment_colors <- c(
 #' @param treatment_colors Named character vector. Colour per treatment, in
 #'   legend order. Block letters are drawn in black or white, whichever
 #'   contrasts more with the fill.
+#' @param treatment_labels Named character vector. Legend label per treatment
+#'   (names = Treatment values), or \code{NULL} for the Treatment values.
 #' @param hours Numeric length 2. Time-of-day range shown (hours).
 #' @param row_fill Numeric. Share of each row used by the bars; the rest is the
 #'   space between days.
@@ -221,6 +223,7 @@ timeline_treatment_colors <- c(
 plot_window_timeline <- function(windows, segments, logger_times = NULL,
                                  logger_name = "Greenhouse log time",
                                  treatment_colors = timeline_treatment_colors,
+                                 treatment_labels = NULL,
                                  hours = c(7.5, 18), row_fill = 0.78) {
   tod <- function(t) { lt <- as.POSIXlt(t, tz = window_tz); lt$hour + lt$min / 60 + lt$sec / 3600 }
   days <- measurement_days(windows)
@@ -261,7 +264,8 @@ plot_window_timeline <- function(windows, segments, logger_times = NULL,
                                     y = yb(Date, 0.61), label = Block, color = I(label_color)),
                        size = 2.1, fontface = "bold") +
     ggplot2::scale_fill_manual(values = treatment_colors, drop = FALSE, name = "Treatment (letter = block)",
-                               guide = ggplot2::guide_legend(order = 3, nrow = 1)) +
+                               labels = if (is.null(treatment_labels)) ggplot2::waiver() else treatment_labels,
+                               guide = ggplot2::guide_legend(order = 3, nrow = 2)) +
     ggnewscale::new_scale_fill() +
     # condition bar under each window
     ggplot2::geom_rect(data = windows,

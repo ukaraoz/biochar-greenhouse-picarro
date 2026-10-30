@@ -219,3 +219,47 @@ water_use_efficiency <- function(endpoint_url, water_per_pot) {
     left_join(shoots, by = "PotID") %>%
     mutate(WUE_mg_per_g = Shoot_Dry_Weight_mg / Water_Total_g)
 }
+
+#' Read the plant measurements over time
+#'
+#' Reads the \code{Raw_Plant_Measurements_Shoot_Chlorophyll} sheet (one row per
+#' pot and date) and averages the raw readings per pot and date: shoot count
+#' and shoot height over the 7 shoots (\code{_R1}-\code{_R7}) and chlorophyll
+#' index over \code{Leaf_1}-\code{Leaf_5}. \code{Leaf_6} is ignored: on
+#' 2026-04-09 it holds the shoot count average instead of a leaf reading, which
+#' also makes the sheet's \code{Chlorophyll_index_Average} wrong for that date.
+#'
+#' @param plant_url Character. URL of the Google Sheet containing the
+#'   \code{Raw_Plant_Measurements_Shoot_Chlorophyll} sheet.
+#'
+#' @return Data frame with one row per pot and date: \code{PotID},
+#'   \code{Block}, \code{Date}, \code{Shoot_Count}, \code{Shoot_Height_cm} and
+#'   \code{Chlorophyll_Index}.
+read_plant_measurements <- function(plant_url) {
+  sheet <- read_sheet(plant_url, sheet = "Raw_Plant_Measurements_Shoot_Chlorophyll")
+  row_mean <- function(columns) rowMeans(as.matrix(sheet[columns]), na.rm = TRUE)
+  sheet %>%
+    transmute(
+      PotID = trimws(PotID),
+      Block,
+      # dates are typed as yyyymmdd numbers
+      Date = as.Date(as.character(Date), format = "%Y%m%d"),
+      Shoot_Count = row_mean(paste0("Shoots_Count_R", 1:7)),
+      Shoot_Height_cm = row_mean(paste0("Shoots_Height_cm_R", 1:7)),
+      Chlorophyll_Index = row_mean(paste0("Leaf_", 1:5))
+    )
+}
+
+#' Plant measurements averaged over dates
+#'
+#' @param plant_measurements Output of \code{read_plant_measurements()}.
+#' @return Data frame with one row per pot: \code{PotID}, \code{Block},
+#'   \code{N_Dates} and the mean over dates of \code{Shoot_Count},
+#'   \code{Shoot_Height_cm} and \code{Chlorophyll_Index}.
+plant_measurements_per_pot <- function(plant_measurements) {
+  plant_measurements %>%
+    group_by(PotID, Block) %>%
+    summarise(N_Dates = n_distinct(Date),
+              across(c(Shoot_Count, Shoot_Height_cm, Chlorophyll_Index), mean),
+              .groups = "drop")
+}

@@ -15,6 +15,12 @@ data_sources:
   # organic carbon). Shoot dry weight is used for water use efficiency.
   endpoint_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1834588341#gid=1834588341"
 
+  # Same Sheet, Raw_Plant_Measurements_Shoot_Chlorophyll tab: shoot count and
+  # height (7 shoots, R1-R7) and chlorophyll index (Leaf_1-Leaf_6) per pot on
+  # 6 dates (2026-04-09 to 2026-05-26), with per-pot averages. The pipeline
+  # averages the raw readings itself and ignores Leaf_6 (wrong on 2026-04-09).
+  plant_measurements_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1757147146#gid=1757147146"
+
   # Greenhouse_Temperature.csv on Google Drive: indoor temperature, relative
   # humidity and PAR light, 2026-03-01 to 2026-05-30
   greenhouse_log: "https://drive.google.com/file/d/184jLi4XAqnDkcbxAWHGWeuM4ZFq0i-6E"
