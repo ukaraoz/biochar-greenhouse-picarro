@@ -10,6 +10,11 @@ lightdark_metadata = metadata[["lightdark_metadata"]]
 afterwatering_metadata = metadata[["afterwatering_metadata"]]
 metadata_joined    = bind_rows(lightdark_metadata, afterwatering_metadata)
 
+# End-point total water added to each pot, summed over its waterings
+# (total_water_added() in R/read_metadata.R)
+water_per_pot = total_water_added(afterwatering_metadata)
+writexl::write_xlsx(water_per_pot, file.path(base, "output/tables/water_added_per_pot.xlsx"))
+
 # Local fixes for chamber-time typos in the metadata sheet, listed in
 # data/metadata_corrections.csv with the sheet row, reason and status. A fix is
 # applied only while the sheet still holds the recorded (wrong) value, so a

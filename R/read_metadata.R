@@ -116,8 +116,14 @@ read_metadata <- function(metadata_url, afterwatering_url) {
 
   # --- After-Watering sheet ---------------------------------------------
   # Already in long format (one measurement condition per row), so only datetime
-  # conversion and Order_Index assignment are needed.
-  afterwatering_metadata = read_sheet(afterwatering_url, sheet = "After_WateringMeasurment") %>%
+  # conversion and Order_Index assignment are needed. Each row is also one
+  # watering of the pot, with the water added in Water_g_60WHC.
+  # Only columns A:N are read for now. The tab has a second, hidden block in
+  # columns Q:U that repeats Water_g_60WHC, Soil_Temperature_C_7cm, surface
+  # temperature and EC (typed-in copies, identical to H:K as of 2026-10-30, with
+  # the "_13cm" suffix on the other column) and adds Soil_Moisture_percent.
+  # Reading A:N keeps one copy of each column under its own name.
+  afterwatering_metadata = read_sheet(afterwatering_url, sheet = "After_WateringMeasurment", range = "A:N") %>%
     select(-contains("...")) %>%
     mutate(
       Date = as.Date(Date),
@@ -142,4 +148,36 @@ read_metadata <- function(metadata_url, afterwatering_url) {
     lightdark_metadata = lightdark_metadata_long,
     afterwatering_metadata = afterwatering_metadata
   )
+}
+
+#' Total water added to each pot over the experiment
+#'
+#' Sums the water added at each watering (\code{Water_g_60WHC}, g added to
+#' bring the pot to 60% of water-holding capacity; one After-Watering sheet row
+#' per watering) to the end-point total per pot.
+#'
+#' @param afterwatering_metadata The \code{afterwatering_metadata} element of
+#'   \code{read_metadata()}.
+#'
+#' @return Data frame with one row per pot: \code{PotID}, \code{Soil},
+#'   \code{Treatment}, \code{Replicate}, \code{Block}, \code{N_Waterings},
+#'   \code{First_Watering}, \code{Last_Watering} (dates) and
+#'   \code{Water_Total_g}.
+total_water_added <- function(afterwatering_metadata) {
+  n_blank <- sum(is.na(afterwatering_metadata$Water_g_60WHC))
+  if (n_blank > 0) {
+    warning(n_blank, " blank Water_g_60WHC cell(s) in After_WateringMeasurment, counted as no water",
+            call. = FALSE)
+  }
+
+  afterwatering_metadata %>%
+    group_by(PotID, Soil, Treatment, Replicate, Block) %>%
+    summarise(
+      N_Waterings = sum(!is.na(Water_g_60WHC)),
+      First_Watering = min(Date),
+      Last_Watering = max(Date),
+      Water_Total_g = sum(Water_g_60WHC, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    arrange(Block, PotID)
 }

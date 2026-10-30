@@ -10,6 +10,11 @@ data_sources:
   # Same Sheet, After_WateringMeasurment tab (After-watering windows)
   afterwatering_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1522788687#gid=1522788687"
 
+  # Same Sheet, pH_EC_EndPoint_July2026 tab: end-point measurements for each pot
+  # (pH, EC, shoots, chlorophyll, dry weights, water use, phosphate, NH4-N,
+  # organic carbon). Not read by the pipeline yet.
+  endpoint_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1834588341#gid=1834588341"
+
   # Greenhouse_Temperature.csv on Google Drive: indoor temperature, relative
   # humidity and PAR light, 2026-03-01 to 2026-05-30
   greenhouse_log: "https://drive.google.com/file/d/184jLi4XAqnDkcbxAWHGWeuM4ZFq0i-6E"
