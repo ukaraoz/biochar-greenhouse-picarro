@@ -12,7 +12,7 @@ data_sources:
 
   # Same Sheet, pH_EC_EndPoint_July2026 tab: end-point measurements for each pot
   # (pH, EC, shoots, chlorophyll, dry weights, water use, phosphate, NH4-N,
-  # organic carbon). Not read by the pipeline yet.
+  # organic carbon). Shoot dry weight is used for water use efficiency.
   endpoint_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1834588341#gid=1834588341"
 
   # Greenhouse_Temperature.csv on Google Drive: indoor temperature, relative

@@ -12,8 +12,31 @@ metadata_joined    = bind_rows(lightdark_metadata, afterwatering_metadata)
 
 # End-point total water added to each pot, summed over its waterings
 # (total_water_added() in R/read_metadata.R)
-water_per_pot = total_water_added(afterwatering_metadata)
+# and water use efficiency (end-point shoot dry weight / total water,
+# water_use_efficiency() in R/read_metadata.R)
+water_per_pot = total_water_added(afterwatering_metadata) %>%
+  water_use_efficiency(config$data_sources$endpoint_sheet, .)
 writexl::write_xlsx(water_per_pot, file.path(base, "output/tables/water_added_per_pot.xlsx"))
+
+# Water use efficiency by treatment: one point per pot (shape = block),
+# treatment mean ± SD in black
+p = ggplot2::ggplot(water_per_pot %>% mutate(Treatment = factor(Treatment, levels = treatment_levels)),
+                    ggplot2::aes(Treatment, WUE_mg_per_g)) +
+  ggplot2::geom_point(ggplot2::aes(color = Treatment, shape = Block), size = 2.5,
+                      position = ggplot2::position_jitter(width = 0.12, height = 0, seed = 1)) +
+  ggplot2::stat_summary(fun.data = ggplot2::mean_sdl, fun.args = list(mult = 1),
+                        geom = "pointrange", color = "black", size = 0.4,
+                        position = ggplot2::position_nudge(x = 0.3)) +
+  ggplot2::scale_color_manual(values = timeline_treatment_colors, guide = "none") +
+  ggplot2::expand_limits(y = 0) +
+  ggplot2::labs(title = "Water use efficiency",
+                subtitle = "End-point shoot dry weight / total water added over 15 waterings; black: treatment mean ± SD",
+                x = NULL, y = "Water use efficiency (mg shoot dry weight / g water)") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 35, hjust = 1),
+                 panel.grid.minor = ggplot2::element_blank())
+save_figure(file.path(base, "output/figures/water_use_efficiency.pdf"), function() print(p),
+            width = 7, height = 5)
 
 # Local fixes for chamber-time typos in the metadata sheet, listed in
 # data/metadata_corrections.csv with the sheet row, reason and status. A fix is

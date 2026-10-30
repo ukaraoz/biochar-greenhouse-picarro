@@ -181,3 +181,41 @@ total_water_added <- function(afterwatering_metadata) {
     ) %>%
     arrange(Block, PotID)
 }
+
+#' Water use efficiency of each pot
+#'
+#' Water use efficiency (mg shoot dry weight per g water added) = end-point
+#' shoot dry weight (\code{Shoot dry weigh_mg} in the end-point sheet) divided
+#' by the total water added (\code{total_water_added()}). The end-point sheet
+#' has one row per pot and soil fraction (\code{Soil_Type} Bulk and
+#' Rhizosphere) with the same shoot weight in both, plus T0 and biochar
+#' reference rows without plants; only the pots in \code{water_per_pot} are
+#' kept. The function stops if a pot has no shoot weight or two different ones.
+#'
+#' @param endpoint_url Character. URL of the Google Sheet containing the
+#'   \code{pH_EC_EndPoint_July2026} sheet.
+#' @param water_per_pot Output of \code{total_water_added()}.
+#'
+#' @return \code{water_per_pot} with \code{Shoot_Dry_Weight_mg} and
+#'   \code{WUE_mg_per_g} added.
+water_use_efficiency <- function(endpoint_url, water_per_pot) {
+  shoots <- read_sheet(endpoint_url, sheet = "pH_EC_EndPoint_July2026") %>%
+    transmute(PotID = trimws(`Sample ID`), Shoot_Dry_Weight_mg = `Shoot dry weigh_mg`) %>%
+    filter(PotID %in% water_per_pot$PotID) %>%
+    distinct()
+
+  conflicting <- shoots$PotID[duplicated(shoots$PotID)]
+  if (length(conflicting) > 0) {
+    stop("pot(s) with different shoot dry weights in the end-point sheet: ",
+         paste(unique(conflicting), collapse = ", "), call. = FALSE)
+  }
+  missing <- setdiff(water_per_pot$PotID, shoots$PotID[!is.na(shoots$Shoot_Dry_Weight_mg)])
+  if (length(missing) > 0) {
+    stop("pot(s) without a shoot dry weight in the end-point sheet: ",
+         paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  water_per_pot %>%
+    left_join(shoots, by = "PotID") %>%
+    mutate(WUE_mg_per_g = Shoot_Dry_Weight_mg / Water_Total_g)
+}
