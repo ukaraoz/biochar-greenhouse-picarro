@@ -12,8 +12,8 @@ Pots were prepared with six soil treatments:
 | Organic soil | Unamended organic soil |
 | Biochar | Mineral soil + biochar |
 | Biochar+SMT | Mineral soil + biochar + SMT inoculum |
-| Biochar+MPSS | Mineral soil + biochar + MPSS inoculum |
-| Biochar+MPSS+SMT | Mineral soil + biochar + MPSS + SMT inocula |
+| Biochar+MPSS | Mineral soil + biochar + MPSS (microbial and plant growth promoting substrates; not an inoculum) |
+| Biochar+MPSS+SMT | Mineral soil + biochar + MPSS + SMT inoculum |
 
 Gas flux measurements were taken under three conditions (`Condition`):
 
