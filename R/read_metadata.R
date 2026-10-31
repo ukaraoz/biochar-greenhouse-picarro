@@ -360,6 +360,40 @@ root_imaging_per_pot <- function(root_measurements) {
               .groups = "drop")
 }
 
+# Standard PotID prefix for each treatment name in the mycorrhizal sheet
+# (both tabs spell the treatments this way and have no pot ID)
+mycorrhizal_prefixes <- c("Convential_soil" = "Conv_Ctrl", "Organic_Soil" = "Org_Ctrl",
+                          "Conv_Bc" = "Conv_BC", "Conv_Bc_SMT" = "Conv_BC-SMT",
+                          "Conv_Bc_MPSS" = "Conv_BC-MPSS", "Conv_Bc_MPSS-SMT" = "Conv_BC-MPSS-SMT")
+
+#' Map mycorrhizal sheet rows to the standard pots
+#'
+#' Translates \code{Mycorrhizal_Treatment} to the standard PotID prefix
+#' (\code{mycorrhizal_prefixes}) and joins, with \code{Block}, to the standard
+#' pot of that prefix and block (each block holds one pot per treatment).
+#' Stops on an unknown treatment name or a row that matches no pot.
+#'
+#' @param sheet Data frame with \code{Mycorrhizal_Treatment} and \code{Block}.
+#' @param pots Data frame of the standard pots with \code{PotID},
+#'   \code{Treatment}, \code{Block} (other columns are carried along).
+#' @return \code{sheet} with the columns of \code{pots} added.
+map_mycorrhizal_pots <- function(sheet, pots) {
+  unknown <- setdiff(sheet$Mycorrhizal_Treatment, names(mycorrhizal_prefixes))
+  if (length(unknown) > 0) {
+    stop("unknown treatment name(s) in the mycorrhizal sheet: ", paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  mapped <- sheet %>%
+    mutate(prefix = unname(mycorrhizal_prefixes[Mycorrhizal_Treatment])) %>%
+    left_join(pots %>% mutate(prefix = sub("_[0-9]+_[A-D]$", "", PotID)), by = c("prefix", "Block")) %>%
+    select(-prefix)
+  unmatched <- mapped %>% filter(is.na(PotID))
+  if (nrow(unmatched) > 0) {
+    stop("mycorrhizal rows with no standard pot: ",
+         paste(unique(paste(unmatched$Mycorrhizal_Treatment, unmatched$Block)), collapse = ", "), call. = FALSE)
+  }
+  mapped
+}
+
 #' Read the root mycorrhizal colonization, mapped to the standard pot IDs
 #'
 #' Reads the \code{PlotingData} tab of the "GreenhouseMycorrhizal_Colonization"
@@ -382,9 +416,10 @@ root_imaging_per_pot <- function(root_measurements) {
 #'   Conv_Bc_MPSS       Conv_BC-MPSS
 #'   Conv_Bc_MPSS-SMT   Conv_BC-MPSS-SMT
 #' }
-#' Mapping: the sheet's treatment is translated to the standard PotID prefix
-#' (table above) and matched, with the block, to the standard pot of that
-#' prefix and block (each block holds one pot per treatment). As a
+#' Mapping (\code{map_mycorrhizal_pots()}): the sheet's treatment is
+#' translated to the standard PotID prefix (table above) and matched, with the
+#' block, to the standard pot of that prefix and block (each block holds one
+#' pot per treatment). As a
 #' cross-check, the sheet's shoot dry weight must equal the end-point sheet's
 #' for the matched pot (\code{Shoot_Dry_Weight_mg} in \code{pots}, when
 #' present). The function stops if a treatment name is unknown, a row matches
@@ -403,11 +438,6 @@ root_imaging_per_pot <- function(root_measurements) {
 #'   name), \code{Colonization_Count}, \code{Colonization_pct},
 #'   \code{Shoot_Dry_Weight_mg} and \code{Root_Dry_Weight_mg} (from this sheet).
 read_mycorrhizal_colonization <- function(mycorrhizal_url, pots) {
-  # standard PotID prefix for each treatment name in the mycorrhizal sheet
-  mycorrhizal_prefixes <- c("Convential_soil" = "Conv_Ctrl", "Organic_Soil" = "Org_Ctrl",
-                            "Conv_Bc" = "Conv_BC", "Conv_Bc_SMT" = "Conv_BC-SMT",
-                            "Conv_Bc_MPSS" = "Conv_BC-MPSS", "Conv_Bc_MPSS-SMT" = "Conv_BC-MPSS-SMT")
-
   sheet <- read_sheet(mycorrhizal_url, sheet = "PlotingData") %>%
     transmute(Mycorrhizal_Treatment = trimws(Treatment),
               Block = trimws(Block),
@@ -417,23 +447,9 @@ read_mycorrhizal_colonization <- function(mycorrhizal_url, pots) {
               Root_Dry_Weight_mg = `Root dry weigh_mg`) %>%
     filter(!is.na(Mycorrhizal_Treatment))
 
-  unknown <- setdiff(sheet$Mycorrhizal_Treatment, names(mycorrhizal_prefixes))
-  if (length(unknown) > 0) {
-    stop("unknown treatment name(s) in the mycorrhizal sheet: ", paste(unknown, collapse = ", "), call. = FALSE)
-  }
+  mapped <- map_mycorrhizal_pots(sheet, pots)
 
-  standard <- pots %>%
-    mutate(prefix = sub("_[0-9]+_[A-D]$", "", PotID))
-  mapped <- sheet %>%
-    mutate(prefix = unname(mycorrhizal_prefixes[Mycorrhizal_Treatment])) %>%
-    left_join(standard, by = c("prefix", "Block"))
-
-  unmatched <- mapped %>% filter(is.na(PotID))
-  if (nrow(unmatched) > 0) {
-    stop("mycorrhizal rows with no standard pot: ",
-         paste(unmatched$Mycorrhizal_Treatment, unmatched$Block, collapse = ", "), call. = FALSE)
-  }
-  row_counts <- standard %>%
+  row_counts <- pots %>%
     select(PotID) %>%
     left_join(count(mapped, PotID), by = "PotID") %>%
     mutate(n = coalesce(n, 0L)) %>%
@@ -454,4 +470,84 @@ read_mycorrhizal_colonization <- function(mycorrhizal_url, pots) {
     transmute(PotID, Treatment, Block, Mycorrhizal_Treatment, Colonization_Count, Colonization_pct,
               Shoot_Dry_Weight_mg = Sheet_Shoot_mg, Root_Dry_Weight_mg) %>%
     arrange(Block, PotID)
+}
+
+#' Read the 4 replicate mycorrhizal colonization reads per pot
+#'
+#' Reads the \code{RawData} tab of the mycorrhizal colonization Sheet: per pot
+#' (\code{Traitment} + \code{Block}), 50 scored points (5 root fragments,
+#' \code{Replicate_Fragments} 1-5, x 10 points, \code{Point} 1-10), each scored
+#' 0/1 (not colonized / colonized by spores, vesicles or fungal hyphae) in 4
+#' replicate reads (columns \code{Replicate1_...} to \code{Replicate4_...}).
+#' The colonization of a read is the percentage of the 50 points scored 1
+#' (2 x the count). The tab also holds a summary row after each pot
+#' (\code{Total}/\code{total}, one labelled \code{Conv_Bc}) without a block or
+#' point number; rows without \code{Point} or \code{Block} are skipped.
+#'
+#' Pots are mapped to the standard PotIDs as in
+#' \code{read_mycorrhizal_colonization()} (\code{map_mycorrhizal_pots()}). The
+#' function stops if a pot does not have exactly 5 x 10 points, a score is not
+#' 0/1, or (when \code{colonization} is given) the mean of the 4 reads differs
+#' from the PlotingData percentage.
+#'
+#' @param mycorrhizal_url Character. URL of the mycorrhizal colonization
+#'   Google Sheet.
+#' @param pots Data frame of the standard pots: \code{PotID},
+#'   \code{Treatment}, \code{Block}.
+#' @param colonization Optional output of \code{read_mycorrhizal_colonization()},
+#'   used as a cross-check.
+#'
+#' @return Data frame with one row per pot and read: \code{PotID},
+#'   \code{Treatment}, \code{Block}, \code{Replicate} (1-4),
+#'   \code{Colonized_Points} (of 50) and \code{Colonization_pct}.
+read_mycorrhizal_replicates <- function(mycorrhizal_url, pots, colonization = NULL) {
+  raw <- read_sheet(mycorrhizal_url, sheet = "RawData")
+  read_columns <- grep("^Replicate[1-4]_", names(raw), value = TRUE)
+  if (length(read_columns) != 4) {
+    stop("expected 4 Replicate<n>_ columns in the mycorrhizal RawData tab, found: ",
+         paste(read_columns, collapse = ", "), call. = FALSE)
+  }
+
+  points <- raw %>%
+    filter(!is.na(Point), !is.na(Block)) %>%
+    transmute(Mycorrhizal_Treatment = trimws(Traitment), Block = trimws(Block),
+              Fragment = Replicate_Fragments, Point, across(all_of(read_columns))) %>%
+    tidyr::pivot_longer(all_of(read_columns), names_to = "Replicate", values_to = "Score") %>%
+    mutate(Replicate = as.integer(sub("^Replicate([1-4])_.*", "\\1", Replicate))) %>%
+    map_mycorrhizal_pots(select(pots, PotID, Treatment, Block))
+
+  bad_scores <- points %>% filter(is.na(Score) | !Score %in% c(0, 1))
+  if (nrow(bad_scores) > 0) {
+    stop("mycorrhizal scores other than 0/1 for: ", paste(unique(bad_scores$PotID), collapse = ", "), call. = FALSE)
+  }
+  layout <- pots %>%
+    select(PotID) %>%
+    left_join(points %>% group_by(PotID) %>%
+                summarise(points = n_distinct(paste(Fragment, Point)), fragments = n_distinct(Fragment),
+                          reads = n() / n_distinct(paste(Fragment, Point)), .groups = "drop"),
+              by = "PotID") %>%
+    filter(is.na(points) | points != 50 | fragments != 5 | reads != 4)
+  if (nrow(layout) > 0) {
+    stop("expected 5 fragments x 10 points, each read 4 times, per pot; not so for: ",
+         paste(layout$PotID, collapse = ", "), call. = FALSE)
+  }
+
+  replicates <- points %>%
+    group_by(PotID, Treatment, Block, Replicate) %>%
+    summarise(Colonized_Points = sum(Score), .groups = "drop") %>%
+    mutate(Colonization_pct = 100 * Colonized_Points / 50) %>%
+    arrange(Block, PotID, Replicate)
+
+  if (!is.null(colonization)) {
+    mismatch <- replicates %>%
+      group_by(PotID) %>%
+      summarise(mean_pct = mean(Colonization_pct), .groups = "drop") %>%
+      inner_join(select(colonization, PotID, Colonization_pct), by = "PotID") %>%
+      filter(abs(mean_pct - Colonization_pct) > 1e-6)
+    if (nrow(mismatch) > 0) {
+      stop("mean of the 4 mycorrhizal reads differs from the PlotingData percentage for: ",
+           paste(mismatch$PotID, collapse = ", "), call. = FALSE)
+    }
+  }
+  replicates
 }
