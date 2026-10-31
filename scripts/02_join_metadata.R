@@ -89,17 +89,20 @@ writexl::write_xlsx(list(per_pot = root_per_pot, per_measurement = root_measurem
 # Boxplot per treatment of the replicate measurements of each pot, overlaid
 # with every measurement as a point: shape = replicate measurement (1-4),
 # color = block (primary colors; yellow darkened to stay visible on white,
-# green as the fourth). One panel per variable.
-# (data: one row per measurement with Treatment, Block, Replicate, variable, value)
+# green as the fourth). One panel per variable. Without a Replicate column
+# (one value per pot) the points are plain dots colored by block.
+# (data: one row per measurement with Treatment, Block, [Replicate,] variable, value)
 plot_replicate_boxplot = function(data, ncol = 3) {
+  has_replicates = "Replicate" %in% names(data)
+  point_aes = if (has_replicates) ggplot2::aes(color = Block, shape = Replicate) else ggplot2::aes(color = Block)
   data %>%
-    mutate(Treatment = factor(Treatment, levels = treatment_levels), Replicate = factor(Replicate)) %>%
+    mutate(Treatment = factor(Treatment, levels = treatment_levels),
+           across(any_of("Replicate"), factor)) %>%
     ggplot2::ggplot(ggplot2::aes(Treatment, value)) +
     # outliers are drawn by the overlaid points
     ggplot2::geom_boxplot(fill = "grey92", color = "grey45", width = 0.6, outlier.shape = NA) +
-    ggplot2::geom_point(ggplot2::aes(color = Block, shape = Replicate),
-                        position = ggplot2::position_jitter(width = 0.22, height = 0, seed = 1),
-                        size = 2, stroke = 0.8) +
+    ggplot2::geom_point(point_aes, position = ggplot2::position_jitter(width = 0.22, height = 0, seed = 1),
+                        size = if (has_replicates) 2 else 2.6, stroke = 0.8) +
     ggplot2::facet_wrap(~ variable, ncol = ncol, scales = "free_y", strip.position = "left") +
     ggplot2::scale_shape_manual(values = c(16, 17, 15, 4), name = "Replicate measurement") +
     ggplot2::scale_color_manual(values = c(A = "#E41A1C", B = "#1F4FE0", C = "#E6B800", D = "#1A9E3A")) +
@@ -142,6 +145,42 @@ p = plot_replicate_boxplot(mycorrhizal_replicates %>%
                              transmute(Treatment, Block, Replicate, value = Colonization_pct,
                                        variable = "Root mycorrhizal colonization (%)"), ncol = 1)
 save_figure(file.path(base, "output/figures/mycorrhizal_colonization.pdf"), function() print(p),
+            width = 8, height = 6.5)
+
+# Mycorrhizal colonization vs root dry weight, one point per pot (both from the
+# mycorrhizal sheet): point = mean of the 4 reads (PlotingData %), bar = ±SD
+# of the reads; color = treatment, shape = block
+colonization_vs_root = mycorrhizal_colonization %>%
+  left_join(mycorrhizal_replicates %>% group_by(PotID) %>%
+              summarise(Colonization_sd = sd(Colonization_pct), .groups = "drop"), by = "PotID") %>%
+  mutate(Treatment = factor(Treatment, levels = treatment_levels))
+colonization_cor = with(colonization_vs_root, c(
+  pearson = cor(Root_Dry_Weight_mg, Colonization_pct),
+  spearman = cor(Root_Dry_Weight_mg, Colonization_pct, method = "spearman")))
+p = ggplot2::ggplot(colonization_vs_root, ggplot2::aes(Root_Dry_Weight_mg, Colonization_pct)) +
+  ggplot2::geom_errorbar(ggplot2::aes(ymin = Colonization_pct - Colonization_sd,
+                                      ymax = Colonization_pct + Colonization_sd, color = Treatment),
+                         width = 0, alpha = 0.5) +
+  ggplot2::geom_point(ggplot2::aes(color = Treatment, shape = Block), size = 3) +
+  ggplot2::annotate("text", x = -Inf, y = Inf, hjust = -0.1, vjust = 1.5, size = 3.5,
+                    label = sprintf("Pearson r = %.2f, Spearman \u03c1 = %.2f (n = %d pots)",
+                                    colonization_cor[["pearson"]], colonization_cor[["spearman"]],
+                                    nrow(colonization_vs_root))) +
+  ggplot2::scale_color_manual(values = timeline_treatment_colors, labels = treatment_labels, name = "Treatment") +
+  ggplot2::scale_shape_manual(values = c(A = 16, B = 17, C = 15, D = 18)) +
+  ggplot2::expand_limits(x = 0, y = 0) +
+  ggplot2::labs(x = "Root dry weight (mg)", y = "Root mycorrhizal colonization (%)") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(panel.grid.minor = ggplot2::element_blank())
+save_figure(file.path(base, "output/figures/mycorrhizal_colonization_vs_root_weight.pdf"), function() print(p),
+            width = 9, height = 6, pdf_device = grDevices::cairo_pdf)
+
+# Root dry weight by treatment (mycorrhizal sheet, one value per pot; equal to
+# the end-point sheet's), same style as the colonization figure
+p = plot_replicate_boxplot(mycorrhizal_colonization %>%
+                             transmute(Treatment, Block, value = Root_Dry_Weight_mg,
+                                       variable = "Root dry weight (mg)"), ncol = 1)
+save_figure(file.path(base, "output/figures/root_dry_weight.pdf"), function() print(p),
             width = 8, height = 6.5)
 
 # Local fixes for chamber-time typos in the metadata sheet, listed in
