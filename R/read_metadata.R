@@ -263,3 +263,195 @@ plant_measurements_per_pot <- function(plant_measurements) {
               across(c(Shoot_Count, Shoot_Height_cm, Chlorophyll_Index), mean),
               .groups = "drop")
 }
+
+# Output variables of the root imaging (WinRHIZO) sheet, in sheet order
+root_imaging_variables <- c("Length_cm", "ProjArea_cm2", "SurfArea_cm2", "AvgDiam_mm", "LenPerVol_cm/m3",
+                            "RootVolume_cm3", "Tips", "Forks", "Crossings")
+
+#' Read the root imaging (WinRHIZO) results, mapped to the standard pot IDs
+#'
+#' Reads the \code{Greenhouse} tab of the "winrhizo_Result_20260528" Sheet: 4
+#' replicate measurements per pot (the sheet's \code{Replicate} column, 1-4;
+#' 96 rows) of the 9 output variables in \code{root_imaging_variables}: root
+#' length, projected and surface area, average diameter, length per volume
+#' (identical to length in this sheet), root volume, tips, forks and crossings.
+#' Only \code{Treatment}, \code{Replicate}, \code{Block}, \code{PotID} and
+#' those variables are read; the \code{Inoculum} and \code{Biochar_Addition}
+#' columns are treatment labels and, like any other column, are ignored.
+#'
+#' Pot IDs: the sheet originally used its own, inconsistent pot IDs (e.g.
+#' \code{Org1A_1}, \code{CON-1A_1}, \code{BC-A1_1}, \code{BC-MPSS_1A_1}, with
+#' the replicate measurement as suffix). On 2026-10-30 its \code{PotID} column
+#' was changed to the standard IDs (\code{<treatment>_<replicate>_<block>},
+#' e.g. \code{Conv_BC-SMT_1_A}), the same for the 4 replicate measurements of
+#' a pot.
+#'
+#' Mapping: the sheet's \code{Treatment} and \code{Block} columns are spelled
+#' exactly as in the measurement sheet, and each Treatment x Block is one pot,
+#' so measurements are matched to standard pots on Treatment + Block; this
+#' does not depend on the sheet's pot IDs. As a cross-check, a filled-in
+#' \code{PotID} must equal the matched standard ID (blank ones get a warning).
+#' The function stops if a measurement matches no pot, a filled-in PotID
+#' disagrees, or a pot does not have exactly the 4 replicate measurements 1-4.
+#'
+#' @param root_url Character. URL of the root imaging Google Sheet.
+#' @param pots Data frame of the standard pots: \code{PotID},
+#'   \code{Treatment}, \code{Block} (e.g. from \code{total_water_added()}).
+#'
+#' @return Data frame with one row per measurement: \code{PotID} (standard),
+#'   \code{Treatment}, \code{Block}, \code{Replicate} (1-4, the replicate
+#'   measurement) and the 9 variables in \code{root_imaging_variables}.
+read_root_imaging <- function(root_url, pots) {
+  sheet <- read_sheet(root_url, sheet = "Greenhouse", .name_repair = "unique_quiet")
+  missing <- setdiff(c("PotID", "Treatment", "Replicate", "Block", root_imaging_variables), names(sheet))
+  if (length(missing) > 0) {
+    stop("root imaging sheet is missing column(s): ", paste(missing, collapse = ", "), call. = FALSE)
+  }
+
+  mapped <- sheet %>%
+    transmute(Sheet_PotID = trimws(as.character(PotID)), Treatment = trimws(Treatment),
+              Block = trimws(Block), Replicate = as.integer(Replicate),
+              across(all_of(root_imaging_variables))) %>%
+    filter(!is.na(Treatment)) %>%
+    left_join(select(pots, PotID, Treatment, Block), by = c("Treatment", "Block"))
+
+  unmatched <- mapped %>% filter(is.na(PotID))
+  if (nrow(unmatched) > 0) {
+    stop("root measurements with no standard pot of the same Treatment and Block: ",
+         paste(unmatched$Treatment, unmatched$Block, collapse = ", "), call. = FALSE)
+  }
+  disagree <- mapped %>% filter(!is.na(Sheet_PotID), Sheet_PotID != "", Sheet_PotID != PotID)
+  if (nrow(disagree) > 0) {
+    stop("root sheet PotIDs that disagree with their Treatment and Block: ",
+         paste(unique(paste(disagree$Sheet_PotID, "vs", disagree$PotID)), collapse = ", "), call. = FALSE)
+  }
+  blank <- mapped %>% filter(is.na(Sheet_PotID) | Sheet_PotID == "")
+  if (nrow(blank) > 0) {
+    warning(nrow(blank), " root imaging row(s) with a blank PotID, mapped by Treatment and Block to: ",
+            paste(unique(blank$PotID), collapse = ", "), call. = FALSE)
+  }
+  bad_replicates <- pots %>%
+    select(PotID) %>%
+    left_join(mapped %>% group_by(PotID) %>%
+                summarise(replicates = paste(sort(Replicate), collapse = ","), .groups = "drop"),
+              by = "PotID") %>%
+    filter(is.na(replicates) | replicates != "1,2,3,4")
+  if (nrow(bad_replicates) > 0) {
+    stop("expected root replicate measurements 1-4 per pot; found: ",
+         paste(bad_replicates$PotID, bad_replicates$replicates, sep = " = ", collapse = ", "), call. = FALSE)
+  }
+
+  mapped %>%
+    select(PotID, Treatment, Block, Replicate, all_of(root_imaging_variables)) %>%
+    arrange(Block, PotID, Replicate)
+}
+
+#' Root imaging results averaged per pot
+#'
+#' @param root_measurements Output of \code{read_root_imaging()}.
+#' @return Data frame with one row per pot: \code{PotID}, \code{Treatment},
+#'   \code{Block}, \code{N_Replicates} and the mean of the 4 replicate
+#'   measurements of each variable in \code{root_imaging_variables}.
+root_imaging_per_pot <- function(root_measurements) {
+  root_measurements %>%
+    group_by(PotID, Treatment, Block) %>%
+    summarise(N_Replicates = n(),
+              across(all_of(root_imaging_variables), mean),
+              .groups = "drop")
+}
+
+#' Read the root mycorrhizal colonization, mapped to the standard pot IDs
+#'
+#' Reads the \code{PlotingData} tab of the "GreenhouseMycorrhizal_Colonization"
+#' Sheet: one row per pot with the number of root points (out of 50) scored as
+#' colonized, averaged over 4 replicate reads
+#' (\code{Root_mycorrhizal_colonization_COUNT}, hence fractional), the
+#' colonization percentage (\code{Root_mycorrhizal_colonization_(\%)} = 2 x the
+#' count), and shoot and root dry weight. The per-point scores are in the
+#' RawData tab (not read here).
+#'
+#' The sheet has no pot ID: a pot is identified by its \code{Treatment} and
+#' \code{Block}, and the treatments are spelled differently from the
+#' measurement sheet:
+#' \preformatted{
+#'   sheet Treatment    standard PotID prefix
+#'   Convential_soil    Conv_Ctrl
+#'   Organic_Soil       Org_Ctrl
+#'   Conv_Bc            Conv_BC
+#'   Conv_Bc_SMT        Conv_BC-SMT
+#'   Conv_Bc_MPSS       Conv_BC-MPSS
+#'   Conv_Bc_MPSS-SMT   Conv_BC-MPSS-SMT
+#' }
+#' Mapping: the sheet's treatment is translated to the standard PotID prefix
+#' (table above) and matched, with the block, to the standard pot of that
+#' prefix and block (each block holds one pot per treatment). As a
+#' cross-check, the sheet's shoot dry weight must equal the end-point sheet's
+#' for the matched pot (\code{Shoot_Dry_Weight_mg} in \code{pots}, when
+#' present). The function stops if a treatment name is unknown, a row matches
+#' no pot, a pot has no row or more than one, or the shoot weights disagree.
+#' The \code{Average_Root_mycorrhizal_colonization_(\%)} column (the treatment
+#' mean, filled only on each treatment's first row) is not kept.
+#'
+#' @param mycorrhizal_url Character. URL of the mycorrhizal colonization
+#'   Google Sheet.
+#' @param pots Data frame of the standard pots: \code{PotID},
+#'   \code{Treatment}, \code{Block}, and optionally \code{Shoot_Dry_Weight_mg}
+#'   (e.g. the output of \code{water_use_efficiency()}).
+#'
+#' @return Data frame with one row per pot: \code{PotID}, \code{Treatment}
+#'   (standard), \code{Block}, \code{Mycorrhizal_Treatment} (the sheet's
+#'   name), \code{Colonization_Count}, \code{Colonization_pct},
+#'   \code{Shoot_Dry_Weight_mg} and \code{Root_Dry_Weight_mg} (from this sheet).
+read_mycorrhizal_colonization <- function(mycorrhizal_url, pots) {
+  # standard PotID prefix for each treatment name in the mycorrhizal sheet
+  mycorrhizal_prefixes <- c("Convential_soil" = "Conv_Ctrl", "Organic_Soil" = "Org_Ctrl",
+                            "Conv_Bc" = "Conv_BC", "Conv_Bc_SMT" = "Conv_BC-SMT",
+                            "Conv_Bc_MPSS" = "Conv_BC-MPSS", "Conv_Bc_MPSS-SMT" = "Conv_BC-MPSS-SMT")
+
+  sheet <- read_sheet(mycorrhizal_url, sheet = "PlotingData") %>%
+    transmute(Mycorrhizal_Treatment = trimws(Treatment),
+              Block = trimws(Block),
+              Colonization_Count = Root_mycorrhizal_colonization_COUNT,
+              Colonization_pct = `Root_mycorrhizal_colonization_(%)`,
+              Sheet_Shoot_mg = `Shoot dry weigh_mg`,
+              Root_Dry_Weight_mg = `Root dry weigh_mg`) %>%
+    filter(!is.na(Mycorrhizal_Treatment))
+
+  unknown <- setdiff(sheet$Mycorrhizal_Treatment, names(mycorrhizal_prefixes))
+  if (length(unknown) > 0) {
+    stop("unknown treatment name(s) in the mycorrhizal sheet: ", paste(unknown, collapse = ", "), call. = FALSE)
+  }
+
+  standard <- pots %>%
+    mutate(prefix = sub("_[0-9]+_[A-D]$", "", PotID))
+  mapped <- sheet %>%
+    mutate(prefix = unname(mycorrhizal_prefixes[Mycorrhizal_Treatment])) %>%
+    left_join(standard, by = c("prefix", "Block"))
+
+  unmatched <- mapped %>% filter(is.na(PotID))
+  if (nrow(unmatched) > 0) {
+    stop("mycorrhizal rows with no standard pot: ",
+         paste(unmatched$Mycorrhizal_Treatment, unmatched$Block, collapse = ", "), call. = FALSE)
+  }
+  row_counts <- standard %>%
+    select(PotID) %>%
+    left_join(count(mapped, PotID), by = "PotID") %>%
+    mutate(n = coalesce(n, 0L)) %>%
+    filter(n != 1)
+  if (nrow(row_counts) > 0) {
+    stop("expected one mycorrhizal row per pot; found: ",
+         paste(row_counts$PotID, row_counts$n, sep = " = ", collapse = ", "), call. = FALSE)
+  }
+  if ("Shoot_Dry_Weight_mg" %in% names(mapped)) {
+    shoot_mismatch <- mapped %>% filter(abs(Sheet_Shoot_mg - Shoot_Dry_Weight_mg) > 1e-6)
+    if (nrow(shoot_mismatch) > 0) {
+      stop("shoot dry weight in the mycorrhizal sheet differs from the end-point sheet for: ",
+           paste(shoot_mismatch$PotID, collapse = ", "), call. = FALSE)
+    }
+  }
+
+  mapped %>%
+    transmute(PotID, Treatment, Block, Mycorrhizal_Treatment, Colonization_Count, Colonization_pct,
+              Shoot_Dry_Weight_mg = Sheet_Shoot_mg, Root_Dry_Weight_mg) %>%
+    arrange(Block, PotID)
+}

@@ -21,6 +21,26 @@ data_sources:
   # averages the raw readings itself and ignores Leaf_6 (wrong on 2026-04-09).
   plant_measurements_sheet: "https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1757147146#gid=1757147146"
 
+  # Separate Google Sheet "winrhizo_Result_20260528", Greenhouse tab: root
+  # imaging (WinRHIZO) results, 4 replicate measurements per pot (Replicate 1-4
+  # numbers the measurement, not the pot replicate; the Inoculum and
+  # Biochar_Addition columns are labels and are ignored): root length,
+  # projected and surface area, average diameter, length per volume, volume,
+  # tips, forks and crossings. PotID holds the standard IDs (since
+  # 2026-10-30); read_root_imaging() maps rows to pots via Treatment + Block and
+  # checks PotID against that.
+  root_imaging_sheet: "https://docs.google.com/spreadsheets/d/1q4c2Pm1AZT-eZfSfqwQ2LyXFPc-gXHiaztKHw4OJ6cY/edit?gid=0#gid=0"
+
+  # Separate Google Sheet "GreenhouseMycorrhizal_Colonization _%)", PlotingData
+  # tab: root mycorrhizal colonization per pot (one row per Treatment x Block;
+  # count of colonized points, % = 2 x count, treatment average), plus shoot and
+  # root dry weight. The RawData tab holds the per-point scores (spores,
+  # vesicles, fungal hyphae; 4 replicate reads per point). Treatment names
+  # differ from the measurement sheet (e.g. Convential_soil, Conv_Bc_MPSS-SMT)
+  # and there is no PotID; read_mycorrhizal_colonization() maps Treatment + Block
+  # to the standard PotIDs.
+  mycorrhizal_colonization_sheet: "https://docs.google.com/spreadsheets/d/1rZtY5fiBUMg42gprO_ppV-wYpBC7YVPnlmv7vE6yv6w/edit?gid=1987739532#gid=1987739532"
+
   # Greenhouse_Temperature.csv on Google Drive: indoor temperature, relative
   # humidity and PAR light, 2026-03-01 to 2026-05-30
   greenhouse_log: "https://drive.google.com/file/d/184jLi4XAqnDkcbxAWHGWeuM4ZFq0i-6E"

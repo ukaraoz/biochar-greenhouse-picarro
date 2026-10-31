@@ -76,6 +76,57 @@ p = plot_treatment_boxplot(plant_per_pot %>%
 save_figure(file.path(base, "output/figures/plant_measurements.pdf"), function() print(p),
             width = 14, height = 6)
 
+# Root imaging (WinRHIZO, 4 replicate measurements per pot).
+# read_root_imaging() maps each measurement to the standard PotID through
+# Treatment + Block and cross-checks the sheet's PotID column (see
+# R/read_metadata.R). Per-pot table = mean of the 4 measurements.
+root_measurements = read_root_imaging(config$data_sources$root_imaging_sheet,
+                                      distinct(water_per_pot, PotID, Treatment, Block))
+root_per_pot = root_imaging_per_pot(root_measurements)
+writexl::write_xlsx(list(per_pot = root_per_pot, per_measurement = root_measurements),
+                    file.path(base, "output/tables/root_imaging.xlsx"))
+
+# Each root imaging variable by treatment: boxplot of the 16 replicate
+# measurements per treatment, overlaid with every measurement as a point,
+# shape = replicate measurement (1-4), color = block (primary colors; yellow
+# darkened to stay visible on white, green as the fourth)
+root_variable_labels = c("Length_cm" = "Root length (cm)", "ProjArea_cm2" = "Projected area (cm²)",
+                         "SurfArea_cm2" = "Surface area (cm²)", "AvgDiam_mm" = "Average diameter (mm)",
+                         "LenPerVol_cm/m3" = "Length per volume (cm/m³)", "RootVolume_cm3" = "Root volume (cm³)",
+                         "Tips" = "Tips", "Forks" = "Forks", "Crossings" = "Crossings")
+p = root_measurements %>%
+  tidyr::pivot_longer(all_of(root_imaging_variables), names_to = "variable") %>%
+  mutate(variable = factor(root_variable_labels[variable], levels = root_variable_labels),
+         Treatment = factor(Treatment, levels = treatment_levels),
+         Replicate = factor(Replicate)) %>%
+  ggplot2::ggplot(ggplot2::aes(Treatment, value)) +
+  # outliers are drawn by the overlaid points
+  ggplot2::geom_boxplot(fill = "grey92", color = "grey45", width = 0.6, outlier.shape = NA) +
+  ggplot2::geom_point(ggplot2::aes(color = Block, shape = Replicate),
+                      position = ggplot2::position_jitter(width = 0.22, height = 0, seed = 1),
+                      size = 2, stroke = 0.8) +
+  ggplot2::facet_wrap(~ variable, ncol = 3, scales = "free_y", strip.position = "left") +
+  ggplot2::scale_shape_manual(values = c(16, 17, 15, 4), name = "Replicate measurement") +
+  ggplot2::scale_color_manual(values = c(A = "#E41A1C", B = "#1F4FE0", C = "#E6B800", D = "#1A9E3A")) +
+  ggplot2::scale_x_discrete(labels = treatment_labels) +
+  ggplot2::expand_limits(y = 0) +
+  ggplot2::labs(x = NULL, y = NULL) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position = "top", panel.grid.minor = ggplot2::element_blank(),
+                 axis.text.x = ggplot2::element_text(angle = 35, hjust = 1),
+                 strip.placement = "outside", strip.background = ggplot2::element_blank(),
+                 strip.text = ggplot2::element_text(size = ggplot2::rel(1.05)))
+save_figure(file.path(base, "output/figures/root_imaging.pdf"), function() print(p),
+            width = 14, height = 13, pdf_device = grDevices::cairo_pdf)
+
+# Root mycorrhizal colonization, one row per pot. The sheet has no pot ID;
+# read_mycorrhizal_colonization() maps its Treatment + Block to the standard
+# PotID and cross-checks the shoot dry weight against the end-point sheet
+# (see R/read_metadata.R).
+mycorrhizal_colonization = read_mycorrhizal_colonization(config$data_sources$mycorrhizal_colonization_sheet,
+                                                         water_per_pot)
+writexl::write_xlsx(mycorrhizal_colonization, file.path(base, "output/tables/mycorrhizal_colonization.xlsx"))
+
 # Local fixes for chamber-time typos in the metadata sheet, listed in
 # data/metadata_corrections.csv with the sheet row, reason and status. A fix is
 # applied only while the sheet still holds the recorded (wrong) value, so a

@@ -27,13 +27,15 @@ Each pot was measured repeatedly over time; `Order_Index` ranks measurement occa
 
 - [Biochar Greenhouse Experiment Master Document](https://docs.google.com/document/d/12pguhFinevDNARxmVrXZqBQZc2flD6XqkcNT2dJXbMQ/edit?tab=t.0) — experimental protocol: design, treatments, growth conditions and methods (*Brachypodium distachyon*, BioEpic Greenhouse, LBNL)
 - [Raw_Plant_Measurements_Shoot_Chlorophyll](https://docs.google.com/spreadsheets/d/1mEHIjlCxUYlHyZAtM29sMYMGwfevLKi1IuZGaYqSyfw/edit?gid=1757147146#gid=1757147146) — tab of the measurement Google Sheet: shoot count, shoot height (cm) and leaf chlorophyll index per pot on 6 dates (2026-04-09 to 2026-05-26); `plant_measurements_sheet` in `config.yml`
+- [winrhizo_Result_20260528](https://docs.google.com/spreadsheets/d/1q4c2Pm1AZT-eZfSfqwQ2LyXFPc-gXHiaztKHw4OJ6cY/edit?gid=0#gid=0) — root imaging data (WinRHIZO), Greenhouse tab: root length, area, diameter, volume, tips, forks and crossings, 4 replicate measurements per pot (`Replicate`, 96 rows; `Inoculum` and `Biochar_Addition` are labels and are ignored); rows are mapped to the standard PotIDs by Treatment + Block in `read_root_imaging()`, which checks the sheet's PotID column; `root_imaging_sheet` in `config.yml`
+- [GreenhouseMycorrhizal_Colonization](https://docs.google.com/spreadsheets/d/1rZtY5fiBUMg42gprO_ppV-wYpBC7YVPnlmv7vE6yv6w/edit?gid=1987739532#gid=1987739532) — mycorrhizal colonization data, PlotingData tab: root colonization (count and %) per pot (Treatment × Block, 24 rows) with shoot and root dry weight; per-point scores in the RawData tab; no PotID and its own treatment names, mapped to the standard PotIDs by `read_mycorrhizal_colonization()`; `mycorrhizal_colonization_sheet` in `config.yml`
 - [Greenhouse_Temperature.csv](https://drive.google.com/file/d/184jLi4XAqnDkcbxAWHGWeuM4ZFq0i-6E/view) — greenhouse environment log: indoor temperature (°C), relative humidity (%) and PAR light, ~15-min intervals
 
 ## Repository structure
 
 ```
 greenhouse/
-├── config.yml              # source data links (measurement Google Sheet tabs, greenhouse log CSV)
+├── config.yml              # source data links (measurement, root imaging and mycorrhizal Google Sheets, greenhouse log CSV)
 ├── R/
 │   ├── config.R            # read_config(): reads and checks config.yml
 │   ├── read_picarro.R      # read_picarro_dat(): parses raw .dat files
@@ -43,7 +45,7 @@ greenhouse/
 │   └── measurement_windows.R # chamber-window utilities: check_window_durations(), find_windows_without_data(), measurement_days(), summarise_in_windows(), picarro_log_segments(), picarro_logging_gaps(), plot_window_timeline()
 ├── scripts/
 │   ├── 01_load_data.R      # reads all .dat files → picarro_data; treatment order and figure names (treatment_names)
-│   ├── 02_join_metadata.R  # joins chamber windows → picarro_data_joined; window checks, water per pot, water use efficiency and plant measurements (tables and figures), and the logging timeline figure
+│   ├── 02_join_metadata.R  # joins chamber windows → picarro_data_joined; window checks, water per pot, water use efficiency and plant measurements (tables and figures), root imaging (table and figure) and mycorrhizal colonization (table), and the logging timeline figure
 │   ├── 03_plot_timeseries.R # raw readings over chamber windows, replicates overlaid
 │   ├── 04_greenhouse_environment.R # greenhouse temperature, relative humidity and PAR per chamber window, one figure each
 │   ├── 05_calculate_flux.R # CO2, CH4 and N2O fluxes per chamber window (goFlux)
@@ -58,7 +60,7 @@ greenhouse/
 
 ## Running the pipeline
 
-The links to the source data are set in `config.yml` under `data_sources`: `metadata_sheet` and `afterwatering_sheet` (chamber times, Google Sheet), `endpoint_sheet` (end-point pot measurements, same Sheet, tab pH_EC_EndPoint_July2026; shoot dry weight), `plant_measurements_sheet` (shoot and chlorophyll measurements over time, same Sheet) and `greenhouse_log` (greenhouse temperature, RH and PAR CSV on Google Drive). When a source file is replaced, update its link there; the scripts read `config$data_sources$<name>`.
+The links to the source data are set in `config.yml` under `data_sources`: `metadata_sheet` and `afterwatering_sheet` (chamber times, Google Sheet), `endpoint_sheet` (end-point pot measurements, same Sheet, tab pH_EC_EndPoint_July2026; shoot dry weight), `plant_measurements_sheet` (shoot and chlorophyll measurements over time, same Sheet), `root_imaging_sheet` (WinRHIZO root imaging, separate Sheet), `mycorrhizal_colonization_sheet` (root mycorrhizal colonization, separate Sheet) and `greenhouse_log` (greenhouse temperature, RH and PAR CSV on Google Drive). When a source file is replaced, update its link there; the scripts read `config$data_sources$<name>`.
 
 ```r
 source("run_all.R")
@@ -76,6 +78,8 @@ source("run_all.R")
 
 | File | Description |
 |---|---|
+| `output/tables/root_imaging.xlsx` | WinRHIZO root traits (length, areas, diameter, volume, tips, forks, crossings) mapped to the standard PotIDs: `per_measurement` (the 9 output variables for each of the 4 replicate measurements per pot) and `per_pot` (mean of the 4 measurements) |
+| `output/tables/mycorrhizal_colonization.xlsx` | Root mycorrhizal colonization per pot (colonized points out of 50, mean of 4 reads, and %) mapped to the standard PotIDs, with the sheet's treatment name and its shoot and root dry weight |
 | `output/tables/plant_measurements_per_pot.xlsx` | Shoot count and shoot height (mean of 7 shoots) and chlorophyll index (mean of Leaf_1-Leaf_5; Leaf_6 is ignored, it holds the shoot count on 2026-04-09) per pot, averaged over the 6 dates (Raw_Plant_Measurements_Shoot_Chlorophyll tab) |
 | `output/tables/water_added_per_pot.xlsx` | End-point total water added to each pot (`Water_g_60WHC` summed over its 15 waterings, After_WateringMeasurment tab columns A:N), shoot dry weight (end-point sheet) and water use efficiency `WUE_mg_per_g` = shoot dry weight (mg) / total water (g) |
 | `output/tables/picarro_data_joined.xlsx` | Raw Picarro readings matched to chamber windows, including dry mole fractions (not tracked in git, ~90 MB; regenerated by the pipeline) |
@@ -83,6 +87,7 @@ source("run_all.R")
 | `output/tables/chamber_window_greenhouse.xlsx` | Greenhouse temperature (`Temp_C`, °C), relative humidity (`RH_pct`, %) and PAR light (`PAR`) at the midpoint of each chamber window. `<Temp/RH/PAR>_source` is `observed` (interpolated from the logger) or `imputed` (median daily cycle, only for windows outside the log; the log covers 2026-03-01 to 2026-05-30, so none currently), with a p10–p90 range for imputed values. `<Temp/RH/PAR>_mean`, `_median` and `_sd` summarise each variable over the whole window, by `window_summary_method` in `04_greenhouse_environment.R`: `"readings"` (default; raw readings inside the window, or the `window_n_closest` nearest readings when none fall inside; SD blank when only one reading is used) or `"interpolate"` (log interpolated to 1-min steps, time-weighted). `_n_readings` counts the raw readings inside the window, `_basis` says how the values were obtained (interpolated / inside window / closest n), and `_max_offset_min` is how far outside the window the farthest reading used lies |
 | `output/figures/greenhouse_temperature.pdf`, `greenhouse_relative_humidity.pdf`, `greenhouse_PAR.pdf` | Logged greenhouse variable over the measurement period (first to last measurement day in the sheet), measurement days shaded by day 1 (blocks A–B) / day 2 (blocks C–D) with occasion numbers, and the value at each chamber window coloured by condition (PDF + PNG) |
 | `output/figures/water_use_efficiency.pdf` | Water use efficiency (mg shoot dry weight / g water added) by treatment: boxplot with the 4 pots overlaid (PDF + PNG) |
+| `output/figures/root_imaging.pdf` | Each of the 9 root imaging variables by treatment: boxplot of the replicate measurements, overlaid with every measurement as a point, shape = replicate measurement (1-4), color = block (PDF + PNG) |
 | `output/figures/plant_measurements.pdf` | Shoot count, shoot height (cm) and chlorophyll index (leaves 1-5) per pot, averaged over the 6 measurement dates, by treatment: boxplots with the 4 pots overlaid (PDF + PNG) |
 | `output/figures/picarro_log_timeline.pdf` | One row per measurement day: Picarro log segments (tan by sampling rate, ≈0.8 readings/s until 2026-04-13 midday, ≈1.2 after; white edges = hourly files), chamber windows coloured by treatment with the block letter inside, a grey condition bar underneath (Light, Dark, After watering), logging gaps outlined, and greenhouse logger times (red lines; solid = temperature, RH and PAR, dotted = temperature only) where they overlap Picarro logging or a chamber window (PDF + PNG) |
 | `output/tables/flux_results.xlsx` | CO2 (µmol m⁻² s⁻¹), CH4 and N2O (nmol m⁻² s⁻¹) fluxes per chamber window from dry mole fractions: `best.flux` and its `model` (linear or Hutchinson–Mosier, chosen by goFlux `best.flux()`), both model estimates, minimal detectable flux (`MDF`) and `quality.check` flags. `Temp_C` is the greenhouse temperature used for the window (window mean by `window_summary_method`, default readings) and `Temp_basis` how it was obtained |
